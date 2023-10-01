@@ -155,6 +155,11 @@ auto market::ticker::get_alias() const -> string
 	return m_alias;
 }
 
+auto market::ticker::get_valuation() const -> int
+{
+	return m_valuation;
+}
+
 auto market::ticker::repr_orderbook() const -> string
 {
 	string repr;
@@ -183,7 +188,7 @@ auto market::ticker::repr_orderbook() const -> string
 			for (const order &ord : m_asks.at(price))
 				ask_vol += ord.volume;
 		}
-		
+
 		if (m_bids.contains(price))
 		{
 			for (const order &ord : m_bids.at(price))
@@ -203,13 +208,123 @@ market::user::user()
 }
 
 market::user::user(string name, int id, string passphase)
-	: m_alias(name), m_id(id), m_passphase(passphase), m_holdings()
+	: m_alias(name), m_id(id), m_passphase(passphase), m_holdings(), m_cash(0)
 {
 }
 
 market::user::user(string name, int id)
-	: m_alias(name), m_id(id), m_passphase(name), m_holdings()
+	: m_alias(name), m_id(id), m_passphase(name), m_holdings(), m_cash(0)
 {
+}
+
+auto market::user::add_order(const order &ord) -> void
+{
+	assert(!m_orders.contains(ord.id));
+	assert(m_id == ord.user_id);
+
+	logger::log(std::format("user {} added order {}", m_id, ord.id));
+
+	m_orders[ord.id] = ord;
+}
+
+auto market::user::remove_order(const order &ord) -> void
+{
+	assert(m_orders.contains(ord.id));
+
+	logger::log(std::format("user {} removed order {}", m_id, ord.id));
+
+	m_orders.erase(ord.id);
+}
+
+auto market::user::fill_order(const order &ord, int price, int volume, side type) -> void
+{
+	assert(m_orders.contains(ord.id));
+
+	logger::log(std::format("user {} filled a {} order {} of {} @ {}",
+		m_id, side_repr[static_cast<int>(type)], ord.id, volume, price));
+
+
+	if (type == side::BID)
+	{
+		// we've brought assets
+		m_cash -= price * volume;
+		m_holdings[ord.ticker_id] += volume;
+	}
+	else
+	{
+		// we've sold assets
+		m_cash += price * volume;
+		m_holdings[ord.ticker_id] -= volume;
+	}
+
+	// update order
+	m_orders[ord.id].volume -= volume;
+	assert(m_orders[ord.id].volume >= 0);
+	if (m_orders[ord.id].volume == 0)
+	{
+		m_orders.erase(ord.id);
+	}
+}
+
+auto market::user::view_order(int order_id) const -> const order &
+{
+	assert(m_orders.contains(order_id));
+
+	return m_orders.at(order_id);
+}
+
+auto market::user::get_orders() const -> vector<int>
+{
+	vector<int> orderids;
+	for (auto ord : m_orders)
+	{
+		orderids.push_back(ord.first);
+	}
+
+	return orderids;
+}
+
+auto market::user::get_assets(const map<int, int> &valuations) const -> int
+{
+	int total = m_cash;
+	for (auto key : m_holdings)
+	{
+		assert(valuations.contains(key.first));
+
+		total += key.second * valuations.at(key.first);
+	}
+
+	return total;
+}
+
+auto market::user::repr() const -> string
+{
+	string repr;
+
+	repr += std::format("name {}, id {}, passphase {}\n", m_alias, m_id, m_passphase);
+	repr += std::format("cash {}\n", m_cash);
+	repr += std::format("holdings:\n");
+
+	for (const auto &key : m_holdings)
+	{
+		repr += std::format("    {}: {}\n", key.first, key.second);
+	}
+	if (m_holdings.size() == 0)
+	{
+		repr += "none\n";
+	}
+
+	repr += "orders:\n";
+	for (const auto &ord : m_orders)
+	{
+		repr += ord.second.repr() + "\n";
+	}
+	if (m_orders.size() == 0)
+	{
+		repr += "none\n";
+	}
+
+	return repr;
 }
 
 market::exchange::exchange()
@@ -251,7 +366,27 @@ auto market::exchange::user_order(side _side, int userid, int tickerid, int pric
 	m_tickers[tickerid].add_order(neworder);
 
 	// proccess/match order
-	match_order(neworder);
+	process_order(neworder);
+}
+
+auto market::exchange::user_cancel(int userid) -> void
+{
+	assert(m_users.contains(userid));
+
+	logger::log(std::format("cancelling all orders for user {}", userid));
+
+	auto &user = m_users[userid];
+	vector<int> ords = user.get_orders();
+	for (int ord : ords)
+	{
+		const order &o = user.view_order(ord);
+		m_tickers[o.ticker_id].cancel_order(o);
+
+		logger::log(std::format("cancelled order {}", o.id));
+		user.remove_order(o);
+	}
+
+
 }
 
 auto market::exchange::repr_tickers() const -> string
@@ -269,11 +404,48 @@ auto market::exchange::repr_tickers() const -> string
 	return repr;
 }
 
-auto market::exchange::match_order(const order &aggressor) -> void
+auto market::exchange::repr_users() const -> string
+{
+	string repr = "=== Users ===\n";
+
+	// compute valuations
+	map<int, int> valuations;
+	for (const auto &ticker : m_tickers)
+	{
+		valuations[ticker.first] = ticker.second.get_valuation();
+	}
+
+	for (const auto &user : m_users)
+	{
+		repr += user.second.repr();
+		repr += std::format("user assets {}\n", user.second.get_assets(valuations));
+		repr += "\n";
+	}
+
+	return repr;
+}
+
+auto market::exchange::repr_transactions() const -> string
+{
+	string repr = "=== Transactions ===\n";
+
+	for (const auto &trans : m_transactions)
+	{
+		repr += trans.repr() + "\n";
+	}
+
+	return repr;
+}
+
+auto market::exchange::process_order(const order &aggressor) -> void
 {
 	assert(m_tickers.contains(aggressor.ticker_id));
+	assert(m_users.contains(aggressor.user_id));
+
 
 	vector<transaction> transactions = m_tickers[aggressor.ticker_id].match(aggressor, m_id);
+
+	// add to transaction history && logging
 	if (transactions.size() == 0)
 	{
 		logger::log("matched no transactions");
@@ -282,26 +454,53 @@ auto market::exchange::match_order(const order &aggressor) -> void
 	{
 		logger::log("matched the transactions:");
 	}
+
 	for (transaction &trans : transactions)
 	{
 		logger::log(std::format("    {}", trans.repr()));
 		m_transactions.push_back(trans);
 	}
 
+	// add order to user
+	m_users[aggressor.user_id].add_order(aggressor);
+
 	// perform transaction
+	int total_volume = 0;
 	for (const transaction &trans : transactions)
 	{
+		total_volume += trans.volume;
+
 		int ticker = trans.ticker_id;
 		m_tickers[ticker].process_transaction(aggressor, trans);
+
+		// update users' orders
+		if (aggressor.wish == side::BID)
+		{
+			// get the order reference for the other side of the transaction
+			const order &ord = m_users[trans.asker_id].view_order(trans.ask_id);
+
+			// update both users' order references
+			m_users[trans.asker_id].fill_order(ord, trans.price, trans.volume, side::ASK);
+			m_users[aggressor.user_id].fill_order(aggressor, trans.price, trans.volume, side::BID);
+		}
+		else if (aggressor.wish == side::ASK)
+		{
+			// get the order reference for the other side of the transaction
+			const order &ord = m_users[trans.bidder_id].view_order(trans.bid_id);
+
+			// update both userss order references
+			m_users[trans.bidder_id].fill_order(ord, trans.price, trans.volume, side::BID);
+			m_users[aggressor.user_id].fill_order(aggressor, trans.price, trans.volume, side::ASK);
+		}
 	}
-
-	// also remove these from the users map
-	// TODO:!
-
 }
 
 auto market::ticker::process_transaction(const order &aggressor, const transaction &trans) -> void
 {
+	// update valuation
+	m_valuation = trans.price;
+
+	// process the transaction, namely to update the orderbooks
 
 	if (trans.aggressor == side::BID)
 	{
@@ -325,6 +524,10 @@ auto market::ticker::process_transaction(const order &aggressor, const transacti
 		if (vol == it->volume)
 		{
 			orders.erase(it);
+			if (orders.size() == 0)
+			{
+				m_asks.erase(ask_price);
+			}
 		}
 		else
 		{
@@ -340,7 +543,9 @@ auto market::ticker::process_transaction(const order &aggressor, const transacti
 		// remove order if competely filled
 		if (aggressor_order.volume == vol)
 		{
-			m_bids[aggressor.price].clear();
+			// this price level must be empty, for we cannot have two aggressors on the same price level
+			assert(m_bids[aggressor.price].size() == 1);
+			m_bids.erase(aggressor.price);
 		}
 		else
 		{
@@ -370,6 +575,10 @@ auto market::ticker::process_transaction(const order &aggressor, const transacti
 		if (vol == it->volume)
 		{
 			orders.erase(it);
+			if (orders.size() == 0)
+			{
+				m_bids.erase(bid_price);
+			}
 		}
 		else
 		{
@@ -384,7 +593,8 @@ auto market::ticker::process_transaction(const order &aggressor, const transacti
 		// remove order if competely filled
 		if (aggressor_order.volume == vol)
 		{
-			m_asks[aggressor.price].clear();
+			assert(m_asks[aggressor.price].size() == 1);
+			m_asks.erase(aggressor.price);
 		}
 		else
 		{
@@ -402,6 +612,51 @@ auto market::ticker::add_order(const order &aggressor) -> void
 	else
 	{
 		m_asks[aggressor.price].push_back(aggressor);
+	}
+}
+
+auto market::ticker::cancel_order(const order &ord) -> void
+{
+	// find the order
+
+	if (ord.wish == side::BID)
+	{
+		assert(m_bids.contains(ord.price));
+
+		auto it = std::find_if(m_bids[ord.price].begin(), m_bids[ord.price].end(), [&](const auto &o)
+		{
+			return o.id == ord.id;
+		});
+
+		// not found here
+		assert(it != m_bids[ord.price].end());
+
+		// else found, and erase it
+		m_bids[ord.price].erase(it);
+		if (m_bids[ord.price].size() == 0)
+		{
+			m_bids.erase(ord.price);
+		}
+	}
+	else if (ord.wish == side::ASK)
+	{
+		assert(m_asks.contains(ord.price));
+
+		auto it = std::find_if(
+			m_asks[ord.price].begin(), m_asks[ord.price].end(),
+			[&](const auto &o)
+		{
+			return o.id == ord.id;
+		});
+		// not found here
+		assert(it != m_asks[ord.price].end());
+
+		// else found, and erase it
+		m_asks[ord.price].erase(it);
+		if (m_asks[ord.price].size() == 0)
+		{
+			m_asks.erase(ord.price);
+		}
 	}
 }
 
@@ -424,7 +679,25 @@ auto market::id_system::get(string type) -> int
 auto market::transaction::repr() const -> string
 {
 	return std::format(
-		"{} aggressor between {} and {} on {} of {} @ {}, orders {} and {}",
-		market::side_repr[static_cast<int>(aggressor)], bidder_id, asker_id, ticker_id, volume, price, bid_id, ask_id
+		"Transaction {}, {} aggressor between {} and {} on {} of {} @ {}, orders {} and {}",
+		id,
+		market::side_repr[static_cast<int>(aggressor)],
+		bidder_id, asker_id,
+		ticker_id,
+		volume, price,
+		bid_id, ask_id
+	);
+}
+
+auto market::order::repr() const -> string
+{
+	return std::format(
+		"Order {}, type {} by {} on {} of {} @ {}",
+		id,
+		market::side_repr[static_cast<int>(wish)],
+		user_id,
+		ticker_id,
+		volume,
+		price
 	);
 }

@@ -70,6 +70,19 @@ auto main() -> int
 	exch.user_order(market::side::BID, 2, 1, 1010, 5, false);
 	std::cout << exch.repr_tickers();
 
+	exch.user_order(market::side::BID, 2, 1, 1012, 10, false);
+	std::cout << exch.repr_tickers();
+
+	exch.user_order(market::side::ASK, 1, 1, 1011, 10, false);
+	std::cout << exch.repr_tickers();
+
+	exch.user_cancel(1);
+	std::cout << exch.repr_tickers();
+
+
+	std::cout << exch.repr_users();
+	std::cout << exch.repr_transactions();
+
 	//std::string test = "test";
 	//logger::log(std::format("Name {}", test), logger::mode::WARN);
 	//start_server();

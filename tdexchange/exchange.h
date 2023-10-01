@@ -77,6 +77,9 @@ struct order
 	// volume and price of the order
 	int price;
 	int volume;
+
+	/// DISPLAY ///
+	auto repr() const->string;
 };
 
 
@@ -90,10 +93,11 @@ protected:
 	int m_id;
 	string m_passphase;
 
+	// FINANCIALS
+	int m_cash;
 	// holdings mapping tickers to amounts
 	map<int, int> m_holdings;
-
-	vector<order> m_orders;
+	map<int, order> m_orders;
 
 
 public:
@@ -105,7 +109,22 @@ public:
 	// setup a user, using the name as a passphase (unsafe)
 	user(string name, int id);
 
-	// TODO: Update Holdings
+	auto add_order(const order &ord) -> void;
+	auto remove_order(const order &ord) -> void;
+	auto fill_order(const order &ord, int price, int volume, side type) -> void;
+	auto view_order(int order_id) const->const order &;
+
+	auto get_orders() const->vector<int>;
+
+	/**
+	 * @brief Returns the net wealth of the user, including cash and holdings
+	 *
+	 * @param valuations
+	 * @return
+	*/
+	auto get_assets(const map<int, int> &valuations) const->int;
+
+	auto repr() const->string;
 };
 
 
@@ -124,6 +143,8 @@ protected:
 	// bids and asks, price are the keys, values are the list of orders at that price
 	map<int, vector<order>> m_bids;
 	map<int, vector<order>> m_asks;
+
+	int m_valuation;
 
 public:
 	ticker();
@@ -155,13 +176,17 @@ public:
 
 	/**
 	 * @brief Adds an order to the order book
-	 * 
-	 * @param aggresor 
-	 * @return 
+	 *
+	 * @param aggresor
+	 * @return
 	*/
 	auto add_order(const order &aggresor) -> void;
 
+	auto cancel_order(const order &ord) -> void;
+
 	auto get_alias() const->string;
+
+	auto get_valuation() const-> int;
 
 	/// DISPLAYING ///
 
@@ -196,9 +221,11 @@ public:
 
 	/// DISPLAYS ///
 	auto repr_tickers() const->string;
+	auto repr_users() const->string;
+	auto repr_transactions() const->string;
 
 protected:
-	auto match_order(const order &aggressor) -> void;
+	auto process_order(const order &aggressor) -> void;
 
 };
 
