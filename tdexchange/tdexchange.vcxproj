@@ -71,10 +71,10 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>C:\Users\forti\Tools\boost\boost_1_82_0;$(IncludePath)</IncludePath>
+    <IncludePath>C:\Users\forti\Tools\boost\boost_1_82_0;C:\Users\forti\Tools\cjson\json-3.11.2\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>C:\Users\forti\Tools\boost\boost_1_82_0;$(IncludePath)</IncludePath>
+    <IncludePath>C:\Users\forti\Tools\boost\boost_1_82_0;C:\Users\forti\Tools\cjson\json-3.11.2\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Label="Vcpkg">
     <VcpkgEnableManifest>false</VcpkgEnableManifest>
@@ -140,10 +140,15 @@
   <ItemGroup>
     <ClCompile Include="exchange.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="server.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="exchange.h" />
     <ClInclude Include="logger.h" />
+    <ClInclude Include="server.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="interface.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

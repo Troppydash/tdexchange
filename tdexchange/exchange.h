@@ -13,55 +13,60 @@ namespace market
 // i am lazy
 using namespace std;
 
-// id singleton
+// id singleton generator
 class id_system
 {
 protected:
+	// next id containers
 	map<string, int> m_ids;
 
 
 public:
 	id_system();
 
+	// get an unique id for an container
 	auto get(string type) -> int;
 };
 
-
-
+// the order type
 enum class side
 {
 	BID = 0,
 	ASK = 1
 };
-static const char *side_repr[] = { "BID", "ASK" };
+static const char *side_repr[] = { "BID", "ASK" };  // macro string
 
+
+// represents a transaction in an order book
 struct transaction
 {
 	// transaction id
 	int id;
 
-	// whether the aggressor is bidding
+	// whether the aggressor is bidding or asking
 	side aggressor;
-
 
 	// transacted price and volume
 	int volume;
 	int price;
 
-	// id of the bid and ask order
-	// may be 0 if it is an IOC order
+	// id of the bid and ask order that enacted the transaction
 	int bid_id;
 	int ask_id;
 
+	// bidder and asker id
 	int bidder_id;
 	int asker_id;
 
+	// id of the ticker it operated on
 	int ticker_id;
 
 	/// DISPLAY ///
 	auto repr() const->string;
 };
 
+
+// represents an order in the order book
 struct order
 {
 	// order id
@@ -82,7 +87,7 @@ struct order
 	auto repr() const->string;
 };
 
-
+// represents a user in the system
 class user
 {
 protected:
@@ -93,10 +98,14 @@ protected:
 	int m_id;
 	string m_passphase;
 
-	// FINANCIALS
+	/// FINANCIALS ///
+
+	// cash money held
 	int m_cash;
+
 	// holdings mapping tickers to amounts
 	map<int, int> m_holdings;
+	// mapping order ids to the order instances
 	map<int, order> m_orders;
 
 
@@ -109,12 +118,25 @@ public:
 	// setup a user, using the name as a passphase (unsafe)
 	user(string name, int id);
 
+	/// user operations
+
+	// link an order with the user
 	auto add_order(const order &ord) -> void;
+
+	// remove the order from the user
 	auto remove_order(const order &ord) -> void;
+
+	// process the order for the user
 	auto fill_order(const order &ord, int price, int volume, side type) -> void;
+
+	// view the order given the id
 	auto view_order(int order_id) const->const order &;
 
+	// get a list of order ids
 	auto get_orders() const->vector<int>;
+
+	// return if the user has the order
+	auto has_order(const order &ord) -> bool;
 
 	/**
 	 * @brief Returns the net wealth of the user, including cash and holdings
@@ -124,6 +146,7 @@ public:
 	*/
 	auto get_assets(const map<int, int> &valuations) const->int;
 
+	/// DISPLAY ///
 	auto repr() const->string;
 };
 
@@ -141,9 +164,11 @@ protected:
 	int m_id;
 
 	// bids and asks, price are the keys, values are the list of orders at that price
+	// the vector is sorted so that orders at the front are processed first
 	map<int, vector<order>> m_bids;
 	map<int, vector<order>> m_asks;
 
+	// valuation for the ticker
 	int m_valuation;
 
 public:
@@ -182,14 +207,35 @@ public:
 	*/
 	auto add_order(const order &aggresor) -> void;
 
+	/**
+	 * @brief Removes an order from the order book, raising exceptions when the order is not found
+	 * 
+	 * @param ord The order containing the order id
+	 * @return
+	 */
 	auto cancel_order(const order &ord) -> void;
 
+	// returns whether the order book contains the order
+	auto has_order(const order &ord) -> bool;
+
+	/**
+	 * @brief Returns the string alias for the ticker
+	 * @return The string alias
+	*/
 	auto get_alias() const->string;
 
+	/**
+	 * @brief Returns the valuation of the ticker, using the last executed price
+	 * @return The valuation
+	*/
 	auto get_valuation() const-> int;
 
 	/// DISPLAYING ///
 
+	/**
+	 * @brief Returns the string representation of the orderbook
+	 * @return 
+	*/
 	auto repr_orderbook() const->string;
 
 };
@@ -201,12 +247,19 @@ public:
 class exchange
 {
 protected:
+	// tickerid to ticker objects
 	map<int, ticker> m_tickers;
+
+	// userid to user objects
 	map<int, user> m_users;
+
+	// a list of transactions, chronologically
 	vector<transaction> m_transactions;
 
+	// mutex lock
 	mutex m_update;
 
+	// id system
 	id_system m_id;
 
 public:
@@ -215,8 +268,23 @@ public:
 
 	//// USER UPDATING FUNCTIONS ////
 
-	auto user_order(side _side, int userid, int tickerid, int price, int volume, bool ioc) -> void;
+	/**
+	 * @brief Process a user order by updating the respective user, ticker orderbooks, and/or order fillings.
+	 * 
+	 * Defaults to a limit that fills at the price or better.
+	 * An IOC acts as a limit order where the unfilled portion is immediately cancelled.
+	 * 
+	 * @param _side 
+	 * @param userid 
+	 * @param tickerid 
+	 * @param price 
+	 * @param volume 
+	 * @param ioc 
+	 * @return 
+	*/
+	auto user_order(side _side, int userid, int tickerid, int price, int volume, bool ioc = false) -> void;
 
+	// cancels all orders of the user
 	auto user_cancel(int userid) -> void;
 
 	/// DISPLAYS ///
@@ -225,8 +293,8 @@ public:
 	auto repr_transactions() const->string;
 
 protected:
+	// attempt to match any order given the new aggressor order
 	auto process_order(const order &aggressor) -> void;
-
 };
 
 

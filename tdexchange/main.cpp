@@ -2,6 +2,8 @@
 #include <string>
 #include <format>
 
+#include <nlohmann/json.hpp>
+
 //#include <boost/asio.hpp>
 //#include <boost/array.hpp>
 
@@ -59,28 +61,40 @@
 
 #include "exchange.h"
 
+//using namespace nlohmann;
+//using namespace nlohmann::json_literals;
+
 auto main() -> int
 {
+	//json test = "[1, 2, \"hi\"]"_json;
+	//std::cout << test << "\n";
+	//std::cout << test.size() << "\n";
+	//std::cout << test[2] << "\n";
+
+	//return 0;
+
+	//
+
 	market::exchange exch;
 
-	exch.user_order(market::side::BID, 1, 1, 1000, 10, false);
-	exch.user_order(market::side::ASK, 1, 1, 1010, 10, false);
+	exch.user_order(market::side::BID, 1, 1, 1000, 10);
+	exch.user_order(market::side::ASK, 1, 1, 1010, 10);
 	std::cout << exch.repr_tickers();
 
-	exch.user_order(market::side::BID, 2, 1, 1010, 5, false);
+	exch.user_order(market::side::BID, 2, 1, 1020, 15, true);
 	std::cout << exch.repr_tickers();
 
-	exch.user_order(market::side::BID, 2, 1, 1012, 10, false);
-	std::cout << exch.repr_tickers();
+	//exch.user_order(market::side::BID, 2, 1, 1012, 10);
+	//std::cout << exch.repr_tickers();
 
-	exch.user_order(market::side::ASK, 1, 1, 1011, 10, false);
-	std::cout << exch.repr_tickers();
+	//exch.user_order(market::side::ASK, 1, 1, 1011, 10);
+	//std::cout << exch.repr_tickers();
 
-	exch.user_cancel(1);
-	std::cout << exch.repr_tickers();
+	//exch.user_cancel(1);
+	//std::cout << exch.repr_tickers();
 
 
-	std::cout << exch.repr_users();
+	//std::cout << exch.repr_users();
 	std::cout << exch.repr_transactions();
 
 	//std::string test = "test";

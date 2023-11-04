@@ -150,6 +150,34 @@ auto market::ticker::match(const order &aggressor, id_system &id) const->vector<
 	return transactions;
 }
 
+auto market::ticker::has_order(const order &ord) -> bool
+{
+	if (ord.wish == side::ASK)
+	{
+		if (!m_asks.contains(ord.price))
+			return false;
+
+		auto it = std::find_if(m_asks[ord.price].begin(), m_asks[ord.price].end(), [&](const order &val)
+		{
+			return val.id == ord.id;
+		});
+
+		return it != m_asks[ord.price].end();
+	}
+	else
+	{
+		if (!m_bids.contains(ord.price))
+			return false;
+
+		auto it = std::find_if(m_bids[ord.price].begin(), m_bids[ord.price].end(), [&](const order &val)
+		{
+			return val.id == ord.id;
+		});
+
+		return it != m_bids[ord.price].end();
+	}
+}
+
 auto market::ticker::get_alias() const -> string
 {
 	return m_alias;
@@ -276,7 +304,7 @@ auto market::user::view_order(int order_id) const -> const order &
 auto market::user::get_orders() const -> vector<int>
 {
 	vector<int> orderids;
-	for (auto ord : m_orders)
+	for (const auto &ord : m_orders)
 	{
 		orderids.push_back(ord.first);
 	}
@@ -284,10 +312,15 @@ auto market::user::get_orders() const -> vector<int>
 	return orderids;
 }
 
+auto market::user::has_order(const order &ord) -> bool
+{
+	return m_orders.contains(ord.id);
+}
+
 auto market::user::get_assets(const map<int, int> &valuations) const -> int
 {
 	int total = m_cash;
-	for (auto key : m_holdings)
+	for (const auto &key : m_holdings)
 	{
 		assert(valuations.contains(key.first));
 
@@ -358,15 +391,41 @@ market::exchange::exchange()
 
 auto market::exchange::user_order(side _side, int userid, int tickerid, int price, int volume, bool ioc) -> void
 {
-	logger::log(std::format("user {} ordered on {} of {} @ {}", userid, tickerid, volume, price));
+	if (ioc)
+	{
+		logger::log(std::format("user {} ordered IOC on {} of {} @ {}", userid, tickerid, volume, price));
+	}
+	else
+	{
+		logger::log(std::format("user {} ordered LIM on {} of {} @ {}", userid, tickerid, volume, price));
+	}
+
+
 
 	assert(m_tickers.contains(tickerid));
 
 	order neworder{ m_id.get("order"), userid, tickerid, _side, price, volume };
+	// add order to user and ticker
 	m_tickers[tickerid].add_order(neworder);
+	m_users[neworder.user_id].add_order(neworder);
 
 	// proccess/match order
 	process_order(neworder);
+
+	// if is IOC order
+	if (ioc)
+	{
+		// immediate cancel it
+		if (m_tickers[tickerid].has_order(neworder))
+		{
+			m_tickers[tickerid].cancel_order(neworder);
+		}
+
+		if (m_users[userid].has_order(neworder))
+		{
+			m_users[userid].remove_order(neworder);
+		}
+	}
 }
 
 auto market::exchange::user_cancel(int userid) -> void
@@ -460,9 +519,6 @@ auto market::exchange::process_order(const order &aggressor) -> void
 		logger::log(std::format("    {}", trans.repr()));
 		m_transactions.push_back(trans);
 	}
-
-	// add order to user
-	m_users[aggressor.user_id].add_order(aggressor);
 
 	// perform transaction
 	int total_volume = 0;
