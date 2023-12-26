@@ -17,7 +17,7 @@ static std::string mode_text[] = { "(INFO)", "(WARN)", "(ERROR)" };
 
 static mode global_mode = mode::INFO;
 
-static auto log(const std::string &text, mode m = mode::INFO)
+static auto log(const std::string &text, mode m = mode::INFO) -> void
 {
 	if (m >= global_mode)
 	{

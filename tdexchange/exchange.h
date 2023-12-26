@@ -41,6 +41,7 @@ static const char *side_repr[] = { "BID", "ASK" };  // macro string
 struct transaction
 {
 	// transaction id
+	// TODO: change this to an unsigned long long
 	int id;
 
 	// whether the aggressor is bidding or asking

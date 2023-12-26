@@ -1,5 +1,7 @@
 TDEX Interface
 
+JSON
+
 Connection/Setup
 
 

@@ -194,7 +194,7 @@ auto market::ticker::repr_orderbook() const -> string
 
 	// header
 	repr += std::format("{:8}|{:8}|{:8}", "Bids", "Price", "Asks") + "\n";
-	repr += "==========================\n";
+	repr += "--------------------------\n";
 
 	set<int> prices;
 	for (const auto &val : m_asks)
@@ -224,7 +224,7 @@ auto market::ticker::repr_orderbook() const -> string
 		}
 
 
-		repr += std::format("{:8}|{:8.1f}|{:8}", bid_vol, price / 10.0, ask_vol) + "\n";
+		repr += std::format("{:8}|{:^8.1f}|{:<8}", bid_vol, price / 10.0, ask_vol) + "\n";
 	}
 
 	return repr;
@@ -403,11 +403,12 @@ auto market::exchange::user_order(side _side, int userid, int tickerid, int pric
 
 
 	assert(m_tickers.contains(tickerid));
+	assert(m_users.contains(userid));
 
 	order neworder{ m_id.get("order"), userid, tickerid, _side, price, volume };
 	// add order to user and ticker
 	m_tickers[tickerid].add_order(neworder);
-	m_users[neworder.user_id].add_order(neworder);
+	m_users[userid].add_order(neworder);
 
 	// proccess/match order
 	process_order(neworder);
@@ -415,7 +416,7 @@ auto market::exchange::user_order(side _side, int userid, int tickerid, int pric
 	// if is IOC order
 	if (ioc)
 	{
-		// immediate cancel it
+		// immediate cancel it from both the tickers and users
 		if (m_tickers[tickerid].has_order(neworder))
 		{
 			m_tickers[tickerid].cancel_order(neworder);
