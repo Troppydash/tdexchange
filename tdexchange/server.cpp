@@ -208,6 +208,12 @@ auto network::server::start_exchange() -> void
             {
                 // when action is to order, process the order
                 const auto &[ticker, ioc, bid, price, volume, user] = *order;
+
+                if (!m_exchange.has_ticker(ticker))
+                {
+                    goto next;
+                }
+
                 int tickerid = m_exchange.get_ticker(ticker).get_id();
                 m_exchange.user_order(
                     bid ? market::side::BID : market::side::ASK,
@@ -221,6 +227,12 @@ auto network::server::start_exchange() -> void
             else if (const delete_order *order = std::get_if<delete_order>(&act))
             {
                 const auto &[ticker, user] = *order;
+
+                if (!m_exchange.has_ticker(ticker))
+                {
+                    goto next;
+                }
+
                 int tickerid = m_exchange.get_ticker(ticker).get_id();
                 m_exchange.user_cancel_ticker(user, tickerid);
             }
@@ -229,11 +241,13 @@ auto network::server::start_exchange() -> void
                 logger::log("unknown action encountered", logger::mode::WARN);
             }
 
+        next:
             m_actions.pop();
         }
         m_action_lock.unlock();
 
 
+        m_connection_lock.lock();
         // preparing data to send tick updates
         const std::map<int, int> &valuations = m_exchange.get_valuations();
         json orderbook = generate_orderbook();
@@ -246,7 +260,7 @@ auto network::server::start_exchange() -> void
         // for each user, send its customized update
         for (const auto &id : ids)
         {
-            int userid = m_user_map[id];
+            int userid = m_user_map.at(id);
 
             // get user holdings
             const market::user &user = m_exchange.get_user(userid);
@@ -276,6 +290,8 @@ auto network::server::start_exchange() -> void
             };
             send_json(payload, id);
         }
+
+        m_connection_lock.unlock();
     }
 }
 
@@ -478,8 +494,17 @@ auto network::server::send_json(const json &message, int user) -> void
         return;
     }
 
-    m_ws.send(m_rconnections.at(user), message.dump(), ws_opcode::text);
-    logger::log(std::format("sending to user {} of message {}", user, message.dump()));
+    // if we can't send because the handle was closed before we process on_close,
+    // too bad and just fail here whatever
+    try
+    {
+        logger::log(std::format("sending to user {} of message {}", user, message.dump()));
+        m_ws.send(m_rconnections.at(user), message.dump(), ws_opcode::text);
+    }
+    catch (const std::exception &ex)
+    {
+        logger::log(std::format("error in sending, reason: {}", ex.what()), logger::mode::ERR);
+    }
 }
 
 auto network::server::force_close_user(int id) -> void

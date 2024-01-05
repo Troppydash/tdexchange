@@ -322,6 +322,7 @@ public:
     auto get_user(int id) const -> const user &;
     auto get_ticker(int id) const -> const ticker &;
     auto get_ticker(const std::string &name) const -> const ticker &;
+    auto has_ticker(const std::string &name) const -> bool;
     auto get_valuations() const->map<int, int>;
 
 protected:

@@ -426,12 +426,40 @@ market::exchange::exchange()
     // fake users
     m_users = {
         {
+            10,
+            {"terry", 10}
+        },
+        {
             1,
             {"bot-01", 1},
         },
         {
             2,
             {"bot-02", 2}
+        },
+         {
+            3,
+            {"bot-03", 3}
+        },
+         {
+            4,
+            {"bot-04", 4}
+        },
+         {
+            5,
+            {"bot-05", 5}
+        },
+         {
+            6,
+            {"bot-06", 6}
+        },
+         {
+            7,
+            {"bot-07", 7}
+        },
+         {
+            8,
+            {"bot-08", 8}
         }
     };
 }
@@ -614,6 +642,19 @@ auto market::exchange::get_ticker(const std::string &name) const -> const ticker
     }
 
     throw std::runtime_error(std::format("cannot find ticker {} in exchange", name));
+}
+
+auto market::exchange::has_ticker(const std::string &name) const -> bool
+{
+    for (const auto &[_, ticker] : m_tickers)
+    {
+        if (ticker.get_alias() == name)
+        {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 auto market::exchange::get_valuations() const -> map<int, int>
