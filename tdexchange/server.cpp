@@ -96,6 +96,12 @@ auto network::server::on_open(ws::connection_hdl hdl) -> void
 	m_pool.submit_task([&, id]()
 	{
 		std::this_thread::sleep_for(std::chrono::seconds(2));
+		if (!m_rconnections.contains(id))
+		{
+			logger::log(std::format("user {} already disconnected prior to auth timeout", id));
+			return;
+		}
+
 		if (!m_user_map.contains(id))
 		{
 			logger::log(std::format("stopping user {} due to lack of authentication", id));

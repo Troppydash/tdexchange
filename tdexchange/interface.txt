@@ -1,11 +1,31 @@
 TDEX Interface
-JSON Format
+JSON Format, Websocket
 
 [Connection/Setup]
-POST /connect
+Within 2 seconds after connection, send
+{
+	"type": "auth",
+	"name": <username>,
+	"passphase": <password>
+}
+receiving ok
+{
+	"type": "auth",
+	"ok": true,
+	"message": ""
+}
+receiving error
+{
+	"type": "auth",
+	"ok": false,
+	"message": ""
+}
+
+! this will log an existing connection out if their user ids are the same.
+
 
 [Disconnect]
-
+terminate the websocket within or after the 2 second timeout
 
 [Operations]
 
