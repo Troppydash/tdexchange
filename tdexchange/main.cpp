@@ -1,12 +1,9 @@
-﻿#include <iostream>
+﻿#include "stdafx.h"
+
+#include <iostream>
 #include <string>
 #include <format>
 #include <functional>
-
-#include <nlohmann/json.hpp>
-using namespace nlohmann::json_literals;
-using namespace nlohmann;
-
 
 #include "logger.h"
 #include "exchange.h"

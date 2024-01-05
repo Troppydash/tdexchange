@@ -28,13 +28,18 @@ receiving error
 terminate the websocket within or after the 2 second timeout
 
 [Server Operations]
-Every second, sends
+Every second, sends to every authorized user
 {
 	"type": "tick",
-	"user": {
-	
+	"position": {
+		<ticker_name>: <holdings>,
+		...
 	},
-	""
+	"cash": <amount>,
+	"price": {
+		<ticker_name>: <price*10>,
+		...
+	}
 }
 
 

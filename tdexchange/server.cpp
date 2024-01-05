@@ -1,3 +1,5 @@
+#include "stdafx.h"
+
 #include "server.h"
 #include "logger.h"
 
@@ -5,12 +7,16 @@
 #include <format>
 #include <functional>
 
-
-
 namespace ws_opcode = websocketpp::frame::opcode;
 
+/**
+ * @brief Wraps a throwable functor into an optional
+ * @tparam T Type of the functor result
+ * @param fn Functor
+ * @return An optional result
+*/
 template <typename T>
-static std::optional<T> wrap_optional(std::function<T(void)> fn)
+static std::optional<T> wrap_optional(std::function<T(void)> fn) noexcept
 {
     try
     {
@@ -22,30 +28,20 @@ static std::optional<T> wrap_optional(std::function<T(void)> fn)
     }
 }
 
+/**
+ * @brief Try parsing a json string
+ * @param j The potential json string
+ * @return An optional json object
+*/
 static std::optional<json> try_parse_json(const std::string &j)
 {
     std::function<json(void)> fn = [&]() {return json::parse(j); };
     return wrap_optional(fn);
 }
 
-//template <typename T, typename D>
-//static auto execute_with_timeout(T fn, D duration)
-//{
-//	std::atomic<bool> timeout = false;
-//	std::thread execute(fn);
-//
-//	std::this_thread::sleep_for(duration);
-//	execute.
-//}
-
-
 network::server::server(unsigned short port)
     : m_port(port), m_nextid(0), m_pool(8)
 {
-
-    // exchange setup
-
-
 }
 
 auto network::server::start() -> void
@@ -93,7 +89,7 @@ auto network::server::on_open(ws::connection_hdl hdl) -> void
     m_connection_lock.unlock();
 
     // attempt to authorize user
-    m_pool.submit_task([&, id]()
+    std::future<void> _ = m_pool.submit_task([&, id]()
     {
         std::this_thread::sleep_for(std::chrono::seconds(2));
         if (!m_rconnections.contains(id))
@@ -174,12 +170,19 @@ auto network::server::start_exchange() -> void
 {
     m_exchange_flag = false;
 
+    int tickid = 0;
     while (!m_exchange_flag)
     {
         // once a second
         std::this_thread::sleep_for(std::chrono::seconds(1));
 
-        logger::log("TICK");
+        logger::log(std::format("TICK {}", tickid));
+        tickid++;
+
+        // preparing data to send tick updates
+        json prices;
+
+
     }
 }
 

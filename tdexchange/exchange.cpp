@@ -472,7 +472,7 @@ auto market::exchange::repr_tickers() const -> string
     string repr = "=== Tickers ===\n";
 
 
-    for (auto ticker : m_tickers)
+    for (const auto &ticker : m_tickers)
     {
         repr += std::format("name {}, id {}", ticker.second.get_alias(), ticker.first) + "\n";
         repr += ticker.second.repr_orderbook();

@@ -3,8 +3,11 @@
 #include <atomic>
 #include <set>
 #include <string>
+
+// using precompiled headers
 #include <websocketpp/config/asio_no_tls.hpp>
 #include <websocketpp/server.hpp>
+#include <nlohmann/json.hpp>
 #include <BS_thread_pool.hpp>
 
 #include "exchange.h"
@@ -13,8 +16,6 @@
 using websocket = websocketpp::server<websocketpp::config::asio>;
 namespace ws = websocketpp;
 
-#include <nlohmann/json.hpp>
-using namespace nlohmann::json_literals;
 using nlohmann::json;
 
 namespace network
