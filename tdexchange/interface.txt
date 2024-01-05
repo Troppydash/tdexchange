@@ -1,7 +1,7 @@
 TDEX Interface
 JSON Format, Websocket
 
-[Connection/Setup]
+[Connection]
 Within 2 seconds after connection, send
 {
 	"type": "auth",
@@ -27,7 +27,18 @@ receiving error
 [Disconnect]
 terminate the websocket within or after the 2 second timeout
 
-[Operations]
+[Server Operations]
+Every second, sends
+{
+	"type": "tick",
+	"user": {
+	
+	},
+	""
+}
+
+
+[User Operations]
 
 
 
