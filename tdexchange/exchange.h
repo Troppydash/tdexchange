@@ -148,6 +148,10 @@ public:
     */
     auto get_assets(const map<int, int> &valuations) const->int;
 
+    auto get_holdings() const->const map<int, int>;
+
+    auto get_cash() const -> int;
+
     // returns whether the user info matches a given info
     auto match(const std::string &name, const std::string &passphase) const -> bool;
 
@@ -155,6 +159,12 @@ public:
     auto repr() const->string;
 };
 
+
+struct orderbook
+{
+    map<int, int> bids;
+    map<int, int> asks;
+};
 
 /**
  * @brief A market ticker refering to a specific stock
@@ -229,6 +239,8 @@ public:
     */
     auto get_alias() const->string;
 
+    auto get_id() const -> int;
+
     /**
      * @brief Returns the valuation of the ticker, using the last executed price
      * @return The valuation
@@ -242,6 +254,9 @@ public:
      * @return
     */
     auto repr_orderbook() const->string;
+
+    /// GETTERS ///
+    auto get_orderbook() const->orderbook;
 
 };
 
@@ -292,6 +307,8 @@ public:
     // cancels all orders of the user
     auto user_cancel(int userid) -> void;
 
+    auto user_cancel_ticker(int userid, int tickerid) -> void;
+
     // returns if the user is authenticated (a part of the exchange)
     auto user_auth(const std::string &name, const std::string &passphase) const->std::optional<int>;
 
@@ -299,6 +316,13 @@ public:
     auto repr_tickers() const->string;
     auto repr_users() const->string;
     auto repr_transactions() const->string;
+
+    /// GETTERS ///
+    auto get_tickers() const-> const map<int, ticker> &;
+    auto get_user(int id) const -> const user &;
+    auto get_ticker(int id) const -> const ticker &;
+    auto get_ticker(const std::string &name) const -> const ticker &;
+    auto get_valuations() const->map<int, int>;
 
 protected:
     // attempt to match any order given the new aggressor order

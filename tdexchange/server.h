@@ -3,6 +3,7 @@
 #include <atomic>
 #include <set>
 #include <string>
+#include <variant>
 
 // using precompiled headers
 #include <websocketpp/config/asio_no_tls.hpp>
@@ -15,11 +16,31 @@
 
 using websocket = websocketpp::server<websocketpp::config::asio>;
 namespace ws = websocketpp;
+namespace ws_opcode = websocketpp::frame::opcode;
 
 using nlohmann::json;
 
+
 namespace network
 {
+
+struct delete_order
+{
+    std::string ticker;
+    int user;
+};
+
+struct action_order
+{
+    std::string ticker;
+    bool ioc;
+    bool bid;
+    int price;
+    int volume;
+    int user;
+};
+
+using action = std::variant<action_order, delete_order>;
 
 // server representing an websocket interface with the exchange
 class server
@@ -70,6 +91,8 @@ protected:  // exchange related stuff
      * @return
     */
     auto stop_exchange() -> void;
+
+    auto generate_orderbook() const -> json;
 
 protected:  // user related stuff
     /**
@@ -136,6 +159,9 @@ protected:
     std::atomic<bool> m_exchange_flag;
     // lock to interface the exchange
     std::mutex m_exchange_lock;
+
+    std::queue<action> m_actions;
+    std::mutex m_action_lock;
 
     // task runner
     BS::thread_pool m_pool;

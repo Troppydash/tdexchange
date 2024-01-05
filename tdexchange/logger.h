@@ -15,11 +15,11 @@ enum class mode
 };
 static std::string mode_text[] = { "(INFO)", "(WARN)", "(ERROR)" };
 
-static mode global_mode = mode::INFO;
+static mode global_mode = mode::WARN;
 
 static auto log(const std::string &text, mode m = mode::INFO) -> void
 {
-    if (m >= global_mode)
+    if (static_cast<int>(m) >= static_cast<int>(global_mode))
     {
         std::cout << mode_text[static_cast<int>(m)] << " " << text << "\n";
     }

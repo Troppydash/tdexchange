@@ -28,22 +28,55 @@ receiving error
 terminate the websocket within or after the 2 second timeout
 
 [Server Operations]
-Every second, sends to every authorized user
+every second, sends to every authorized user
 {
 	"type": "tick",
 	"position": {
 		<ticker_name>: <holdings>,
 		...
 	},
-	"cash": <amount>,
-	"price": {
-		<ticker_name>: <price*10>,
+	"user": {
+		"cash": <cash>,
+		"wealth": <wealth>
+	},
+	"orderbook": {
+		<ticker_name>: {
+			"bids": [
+				{
+					"price": <price>,
+					"volume": <volume>
+				},
+				...
+			],
+			"asks": [
+				{
+					"price": <price>,
+					"volume": <volume>
+				},
+				...
+			]
+		},
 		...
 	}
 }
 
 
 [User Operations]
+to place an order on a ticker, send
+{
+	"type": "order",
+	"ticker": <ticker_name>,
+	"price": <price>,
+	"volume": <volume>,
+	"bid": false | true,
+	"ioc": false | true
+}
+
+to delete all orders from a ticker, send
+{
+	"type": "delete",
+	"ticker": <ticker_name>	
+}
 
 
 

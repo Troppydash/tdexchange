@@ -183,6 +183,11 @@ auto market::ticker::get_alias() const -> string
     return m_alias;
 }
 
+auto market::ticker::get_id() const -> int
+{
+    return m_id;
+}
+
 auto market::ticker::get_valuation() const -> int
 {
     return m_valuation;
@@ -228,6 +233,33 @@ auto market::ticker::repr_orderbook() const -> string
     }
 
     return repr;
+}
+
+auto market::ticker::get_orderbook() const -> orderbook
+{
+    orderbook book;
+
+    for (const auto &[price, orders] : m_bids)
+    {
+        int volume = 0;
+        for (const auto &ord : orders)
+        {
+            volume += ord.volume;
+        }
+        book.bids[price] = volume;
+    }
+
+    for (const auto &[price, orders] : m_asks)
+    {
+        int volume = 0;
+        for (const auto &ord : orders)
+        {
+            volume += ord.volume;
+        }
+        book.asks[price] = volume;
+    }
+
+    return book;
 }
 
 market::user::user()
@@ -328,6 +360,16 @@ auto market::user::get_assets(const map<int, int> &valuations) const -> int
     }
 
     return total;
+}
+
+auto market::user::get_holdings() const -> const map<int, int>
+{
+    return m_holdings;
+}
+
+auto market::user::get_cash() const -> int
+{
+    return m_cash;
 }
 
 auto market::user::match(const std::string &name, const std::string &passphase) const -> bool
@@ -445,13 +487,38 @@ auto market::exchange::user_cancel(int userid) -> void
     for (int ord : ords)
     {
         const order &o = user.view_order(ord);
+
         m_tickers[o.ticker_id].cancel_order(o);
+        user.remove_order(o);
 
         logger::log(std::format("cancelled order {}", o.id));
-        user.remove_order(o);
     }
 
 
+}
+
+auto market::exchange::user_cancel_ticker(int userid, int tickerid) -> void
+{
+    assert(m_users.contains(userid));
+    assert(m_tickers.contains(tickerid));
+
+    logger::log(std::format("cancelling all orders on {} for user {}", tickerid, userid));
+
+    auto &user = m_users[userid];
+    vector<int> ords = user.get_orders();
+    for (int ord : ords)
+    {
+        const order &o = user.view_order(ord);
+
+        // but we skip the non-matching tickers
+        if (o.ticker_id != tickerid)
+            continue;
+
+        m_tickers[o.ticker_id].cancel_order(o);
+        user.remove_order(o);
+
+        logger::log(std::format("cancelled order {}", o.id));
+    }
 }
 
 auto market::exchange::user_auth(const std::string &name, const std::string &passphase) const -> std::optional<int>
@@ -513,6 +580,50 @@ auto market::exchange::repr_transactions() const -> string
     }
 
     return repr;
+}
+
+auto market::exchange::get_tickers() const -> const map<int, ticker> &
+{
+    return m_tickers;
+}
+
+auto market::exchange::get_user(int id) const -> const user &
+{
+    assert(m_users.contains(id));
+
+    return m_users.at(id);
+}
+
+auto market::exchange::get_ticker(int id) const -> const ticker &
+{
+    assert(m_tickers.contains(id));
+
+    return m_tickers.at(id);
+}
+
+auto market::exchange::get_ticker(const std::string &name) const -> const ticker &
+{
+    // TODO: cache this ticker alias lookup
+
+    for (const auto &[_, ticker] : m_tickers)
+    {
+        if (ticker.get_alias() == name)
+        {
+            return ticker;
+        }
+    }
+
+    throw std::runtime_error(std::format("cannot find ticker {} in exchange", name));
+}
+
+auto market::exchange::get_valuations() const -> map<int, int>
+{
+    map<int, int> valuations;
+    for (const auto &[id, ticker] : m_tickers)
+    {
+        valuations[id] = ticker.get_valuation();
+    }
+    return valuations;
 }
 
 auto market::exchange::process_order(const order &aggressor) -> void
