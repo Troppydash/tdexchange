@@ -330,6 +330,11 @@ auto market::user::get_assets(const map<int, int> &valuations) const -> int
 	return total;
 }
 
+auto market::user::match(const std::string &name, const std::string &passphase) const -> bool
+{
+	return m_alias == name && m_passphase == passphase;
+}
+
 auto market::user::repr() const -> string
 {
 	string repr;
@@ -447,6 +452,19 @@ auto market::exchange::user_cancel(int userid) -> void
 	}
 
 
+}
+
+auto market::exchange::user_auth(const std::string &name, const std::string &passphase) const -> std::optional<int>
+{
+	for (const auto &[id, u] : m_users)
+	{
+		if (u.match(name, passphase))
+		{
+			return { id };
+		}
+	}
+
+	return std::nullopt;
 }
 
 auto market::exchange::repr_tickers() const -> string
@@ -722,7 +740,7 @@ market::id_system::id_system()
 {
 }
 
-auto market::id_system::get(string type) -> int
+auto market::id_system::get(const string &type) -> int
 {
 	if (!m_ids.contains(type))
 	{

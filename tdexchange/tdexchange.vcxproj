@@ -71,10 +71,10 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>C:\Users\forti\Tools\boost\boost_1_82_0;C:\Users\forti\Tools\cjson\json-3.11.2\include;$(IncludePath)</IncludePath>
+    <IncludePath>C:\Users\forti\Tools\boost\boost_1_82_0;C:\Users\forti\Tools\cjson\json-3.11.2\include;C:\Users\forti\Tools\http\cpp-httplib-0.14.3;C:\Users\forti\Tools\http\websocketpp-0.8.2\websocketpp;C:\Users\forti\Tools\http\thread-pool-4.0.1\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>C:\Users\forti\Tools\boost\boost_1_82_0;C:\Users\forti\Tools\cjson\json-3.11.2\include;$(IncludePath)</IncludePath>
+    <IncludePath>C:\Users\forti\Tools\boost\boost_1_82_0;C:\Users\forti\Tools\cjson\json-3.11.2\include;C:\Users\forti\Tools\http\cpp-httplib-0.14.3;C:\Users\forti\Tools\http\websocketpp-0.8.2\websocketpp;C:\Users\forti\Tools\http\thread-pool-4.0.1\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Label="Vcpkg">
     <VcpkgEnableManifest>false</VcpkgEnableManifest>

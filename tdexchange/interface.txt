@@ -1,14 +1,13 @@
 TDEX Interface
+JSON Format
 
-JSON
+[Connection/Setup]
+POST /connect
 
-Connection/Setup
-
-
-Disconnection
+[Disconnect]
 
 
-Operations
+[Operations]
 
 
 

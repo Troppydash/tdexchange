@@ -5,6 +5,7 @@
 #include <vector>
 #include <map>
 #include <mutex>
+#include <optional>
 
 
 namespace market
@@ -25,7 +26,7 @@ public:
 	id_system();
 
 	// get an unique id for an container
-	auto get(string type) -> int;
+	auto get(const string &type) -> int;
 };
 
 // the order type
@@ -146,6 +147,9 @@ public:
 	 * @return
 	*/
 	auto get_assets(const map<int, int> &valuations) const->int;
+
+	// returns whether the user info matches a given info
+	auto match(const std::string &name, const std::string &passphase) const -> bool;
 
 	/// DISPLAY ///
 	auto repr() const->string;
@@ -287,6 +291,9 @@ public:
 
 	// cancels all orders of the user
 	auto user_cancel(int userid) -> void;
+
+	// returns if the user is authenticated (a part of the exchange)
+	auto user_auth(const std::string &name, const std::string &passphase) const -> std::optional<int>;
 
 	/// DISPLAYS ///
 	auto repr_tickers() const->string;
