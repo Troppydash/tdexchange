@@ -12,7 +12,7 @@ market::ticker::ticker()
 }
 
 market::ticker::ticker(string name, int id)
-    : m_alias(name), m_id(id), m_asks(), m_bids()
+    : m_alias(name), m_id(id), m_asks(), m_bids(), m_valuation(0)
 {
 }
 
@@ -229,7 +229,7 @@ auto market::ticker::repr_orderbook() const -> string
         }
 
 
-        repr += std::format("{:8}|{:^8.1f}|{:<8}", bid_vol, price / 10.0, ask_vol) + "\n";
+        repr += std::format("{:8}|{:^8.1f}|{:<8}", bid_vol, price / 100.0, ask_vol) + "\n";
     }
 
     return repr;
