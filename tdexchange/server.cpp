@@ -180,11 +180,11 @@ auto network::server::start_exchange() -> void
     m_exchange_flag = false;
 
     // initial exchange stuff
-    m_exchange_lock.lock();
+   /* m_exchange_lock.lock();
     m_exchange.user_order(market::side::BID, 1, 1, 10000, 10);
     m_exchange.user_order(market::side::ASK, 1, 1, 10100, 100);
     m_exchange.user_order(market::side::BID, 2, 1, 10100, 3);
-    m_exchange_lock.unlock();
+    m_exchange_lock.unlock();*/
 
     std::default_random_engine rng;
     int tickid = 0;

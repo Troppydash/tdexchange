@@ -439,56 +439,23 @@ market::exchange::exchange()
     };
 
     // fake users
-    m_users = {
-        {
-            10,
-            {"terry", 10, true}
-        },
-        {
-            88,
-            {"trading-a", 88}
-        },
-        {
-            77,
-            {"trading-b", 77}
-        },
-        {
-            66,
-            {"trading-c", 66}
-        },
-        {
-            1,
-            {"bot-01", 1},
-        },
-        {
-            2,
-            {"bot-02", 2}
-        },
-         {
-            3,
-            {"bot-03", 3}
-        },
-         {
-            4,
-            {"bot-04", 4}
-        },
-         {
-            5,
-            {"bot-05", 5}
-        },
-         {
-            6,
-            {"bot-06", 6}
-        },
-         {
-            7,
-            {"bot-07", 7}
-        },
-         {
-            8,
-            {"bot-08", 8}
-        }
-    };
+    m_users = {};
+
+    // create bots
+    for (int i = 0; i < 20; ++i)
+    {
+        m_users.insert({ i, { std::format("bot-{:02}", i), i } });
+        //m_users[i] = { std::format("bot-{:02}", i), i };
+    }
+
+    // create trading accounts
+    for (char c = 'a'; c <= 'z'; ++c)
+    {
+        m_users.insert({ (int)c, { std::format("trading-{}", c), (int)c } });
+    }
+
+    // create admin
+    m_users.insert({ 1000, {"terry", 1000, true} });
 }
 
 auto market::exchange::user_order(side _side, int userid, int tickerid, int price, int volume, bool ioc) -> void
