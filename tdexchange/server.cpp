@@ -41,7 +41,7 @@ static std::optional<json> try_parse_json(const std::string &j)
 }
 
 network::server::server(unsigned short port)
-    : m_port(port), m_nextid(0), m_pool(8), m_ws()
+    : m_port(port), m_nextid(0), m_pool(8), m_ws(), m_exchange_next_transaction(0)
 {
 }
 
@@ -252,6 +252,28 @@ auto network::server::start_exchange() -> void
         const std::map<int, int> &valuations = m_exchange.get_valuations();
         json orderbook = generate_orderbook();
 
+        // compute transactions
+        json ts = json::array();
+        const auto &transactions = m_exchange.get_transactions();
+        for (auto it = transactions.begin() + m_exchange_next_transaction; it < transactions.end(); ++it)
+        {
+            const market::transaction &trans = *it;
+            json trans_json = {
+                {"id", trans.id},
+                {"bidder", m_exchange.get_user(trans.bidder_id).get_alias()},
+                {"asker", m_exchange.get_user(trans.asker_id).get_alias()},
+                {"bid_order", trans.bid_id},
+                {"ask_order", trans.ask_id},
+                {"ticker", m_exchange.get_ticker(trans.ticker_id).get_alias()},
+                {"aggressor_bid", trans.aggressor == market::side::BID},
+                {"price", trans.price},
+                {"volume", trans.volume}
+            };
+            ts.push_back(trans_json);
+        }
+        m_exchange_next_transaction += ts.size();
+
+
         // randomize the user order that the ticks are sent to
         auto kv = std::views::keys(m_user_map);
         std::vector<int> ids{ kv.begin(), kv.end() };
@@ -266,16 +288,7 @@ auto network::server::start_exchange() -> void
             const market::user &user = m_exchange.get_user(userid);
             const std::map<int, int> &holdings = user.get_holdings();
 
-            json position = json::object();
-            for (const auto &[id, ticker] : m_exchange.get_tickers())
-            {
-                int amount = 0;
-                if (holdings.contains(id))
-                {
-                    amount = holdings.at(id);
-                }
-                position[ticker.get_alias()] = amount;
-            }
+            json position = generate_user_position(userid);
 
             json usr = {
                 {"wealth", user.get_assets(valuations)},
@@ -284,11 +297,42 @@ auto network::server::start_exchange() -> void
 
             json payload = {
                 {"type", "tick"},
+                {"id", tickid},
                 {"position", position},
                 {"orderbook", orderbook},
-                {"user", usr}
+                {"user", usr},
+                {"transactions", ts}
             };
             send_json(payload, id);
+        }
+
+
+        // create admin message
+        json admin = {
+            {"type", "admin-tick"},
+            {"id", tickid},
+            {"users", json::object()}
+        };
+        for (const auto &[id, user] : m_exchange.get_users())
+        {
+            json user_json = {
+                {"cash", user.get_cash()},
+                {"wealth", user.get_assets(valuations)},
+                {"holdings", generate_user_position(id)}
+            };
+
+            admin["users"][user.get_alias()] = user_json;
+        }
+
+        // check for admin
+        for (const auto &id : ids)
+        {
+            int userid = m_user_map.at(id);
+
+            if (m_exchange.get_user(userid).get_admin())
+            {
+                send_json(admin, id);
+            }
         }
 
         m_connection_lock.unlock();
@@ -326,10 +370,28 @@ auto network::server::generate_orderbook() const -> json
             return v1["price"] < v2["price"];
         });
 
-        prices[ticker.get_alias()] = { {"bids", bids}, {"asks", asks} };
+        prices[ticker.get_alias()] = { {"bids", bids}, {"asks", asks}, {"last_price", ticker.get_valuation() } };
     }
 
     return prices;
+}
+
+auto network::server::generate_user_position(int userid) const -> json
+{
+    json holdings_json = json::object();
+
+    const auto &user = m_exchange.get_user(userid);
+    const std::map<int, int> &holdings = user.get_holdings();
+    for (const auto &[id, ticker] : m_exchange.get_tickers())
+    {
+        int amount = 0;
+        if (holdings.contains(id))
+        {
+            amount = holdings.at(id);
+        }
+        holdings_json[ticker.get_alias()] = amount;
+    }
+    return holdings_json;
 }
 
 auto network::server::parse_payload(const json &payload, int id, int user) -> void

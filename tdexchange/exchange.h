@@ -100,6 +100,8 @@ protected:
     int m_id;
     string m_passphase;
 
+    bool m_is_admin;
+
     /// FINANCIALS ///
 
     // cash money held
@@ -119,6 +121,8 @@ public:
 
     // setup a user, using the name as a passphase (unsafe)
     user(string name, int id);
+
+    user(string name, int id, bool is_admin);
 
     /// user operations
 
@@ -147,10 +151,10 @@ public:
      * @return
     */
     auto get_assets(const map<int, int> &valuations) const->int;
-
     auto get_holdings() const->const map<int, int>;
-
     auto get_cash() const -> int;
+    auto get_admin() const -> bool;
+    auto get_alias() const -> const string &;
 
     // returns whether the user info matches a given info
     auto match(const std::string &name, const std::string &passphase) const -> bool;
@@ -320,11 +324,12 @@ public:
     /// GETTERS ///
     auto get_tickers() const-> const map<int, ticker> &;
     auto get_user(int id) const -> const user &;
+    auto get_users() const -> const map<int, user> &;
     auto get_ticker(int id) const -> const ticker &;
     auto get_ticker(const std::string &name) const -> const ticker &;
     auto has_ticker(const std::string &name) const -> bool;
     auto get_valuations() const->map<int, int>;
-
+    auto get_transactions() const->const vector<transaction> &;
 protected:
     // attempt to match any order given the new aggressor order
     auto process_order(const order &aggressor) -> void;

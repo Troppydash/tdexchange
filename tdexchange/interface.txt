@@ -31,6 +31,7 @@ terminate the websocket within or after the 2 second timeout
 every second, sends to every authorized user
 {
 	"type": "tick",
+	"id": <id>,
 	"position": {
 		<ticker_name>: <holdings>,
 		...
@@ -41,6 +42,7 @@ every second, sends to every authorized user
 	},
 	"orderbook": {
 		<ticker_name>: {
+			"last_price": <price>,
 			"bids": [
 				{
 					"price": <price>,
@@ -55,6 +57,37 @@ every second, sends to every authorized user
 				},
 				...
 			]
+		},
+		...
+	},
+	"transactions": [
+		{
+			"id": <id>,
+			"bidder": <username>,
+			"asker": <username>,
+			"bid_order": <id>,
+			"ask_order": <id>,
+			"ticker": <ticker>,
+			"aggressor_bid": true | false,
+			"price": <price>,
+			"volume": <volume>
+		},
+		...
+	]
+}
+
+every second, for admin users, send
+{
+	"type": "admin-tick",
+	"id": <id>,
+	"users": {
+		<username>: {
+			"cash": <cash>,
+			"wealth": <wealth>,
+			"holdings": {
+				<ticker>: <position>,
+				...
+			}
 		},
 		...
 	}
@@ -77,6 +110,7 @@ to delete all orders from a ticker, send
 	"type": "delete",
 	"ticker": <ticker_name>	
 }
+
 
 
 

@@ -268,12 +268,17 @@ market::user::user()
 }
 
 market::user::user(string name, int id, string passphase)
-    : m_alias(name), m_id(id), m_passphase(passphase), m_holdings(), m_cash(0)
+    : m_alias(name), m_id(id), m_passphase(passphase), m_holdings(), m_cash(0), m_is_admin(false)
 {
 }
 
 market::user::user(string name, int id)
-    : m_alias(name), m_id(id), m_passphase(name), m_holdings(), m_cash(0)
+    : m_alias(name), m_id(id), m_passphase(name), m_holdings(), m_cash(0), m_is_admin(false)
+{
+}
+
+market::user::user(string name, int id, bool is_admin)
+    : m_alias(name), m_id(id), m_passphase(name), m_holdings(), m_cash(0), m_is_admin(is_admin)
 {
 }
 
@@ -372,6 +377,16 @@ auto market::user::get_cash() const -> int
     return m_cash;
 }
 
+auto market::user::get_admin() const -> bool
+{
+    return m_is_admin;
+}
+
+auto market::user::get_alias() const -> const string &
+{
+    return m_alias;
+}
+
 auto market::user::match(const std::string &name, const std::string &passphase) const -> bool
 {
     return m_alias == name && m_passphase == passphase;
@@ -427,7 +442,19 @@ market::exchange::exchange()
     m_users = {
         {
             10,
-            {"terry", 10}
+            {"terry", 10, true}
+        },
+        {
+            88,
+            {"trading-a", 88}
+        },
+        {
+            77,
+            {"trading-b", 77}
+        },
+        {
+            66,
+            {"trading-c", 66}
         },
         {
             1,
@@ -622,6 +649,11 @@ auto market::exchange::get_user(int id) const -> const user &
     return m_users.at(id);
 }
 
+auto market::exchange::get_users() const -> const map<int, user> &
+{
+    return m_users;
+}
+
 auto market::exchange::get_ticker(int id) const -> const ticker &
 {
     assert(m_tickers.contains(id));
@@ -665,6 +697,11 @@ auto market::exchange::get_valuations() const -> map<int, int>
         valuations[id] = ticker.get_valuation();
     }
     return valuations;
+}
+
+auto market::exchange::get_transactions() const -> const vector<transaction> &
+{
+    return m_transactions;
 }
 
 auto market::exchange::process_order(const order &aggressor) -> void

@@ -93,6 +93,7 @@ protected:  // exchange related stuff
     auto stop_exchange() -> void;
 
     auto generate_orderbook() const -> json;
+    auto generate_user_position(int userid) const -> json;
 
 protected:  // user related stuff
     /**
@@ -155,6 +156,7 @@ protected:
 
     // exchange instance
     market::exchange m_exchange;
+    int m_exchange_next_transaction;
     // flag to indicate if the exchange should continue to process
     std::atomic<bool> m_exchange_flag;
     // lock to interface the exchange
