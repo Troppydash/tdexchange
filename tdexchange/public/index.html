@@ -135,9 +135,6 @@
 
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!--<script src="https://code.jquery.com/jquery-3.7.1.min.js"-->
-    <!--        integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo="-->
-    <!--        crossorigin="anonymous"></script>-->
     <script>
     Chart.defaults.backgroundColor = '#9BD0F5';
     Chart.defaults.borderColor = '#464646';
@@ -203,7 +200,7 @@
                         label: name,
                         data: [data[name]],
                         pointRadius: 2,
-                        borderWidth: 1,
+                        borderWidth: name.endsWith("_mid") ? 1 : 2
                     }
                 });
                 for (const dataset of datasets) {
@@ -262,8 +259,8 @@
                 last: 50,  // how many ticks are retained on the graph
                 last_transactions: 10,  // how many transactions are retained on the table
                 book_update: 200,  // how frequent the order book is updated
-                all_update: 50,  // how frequent the users are updated
-                pnl_update: 20,
+                all_update: 10,  // how frequent the users are updated
+                pnl_update: 5,
                 chart_restart: 5,
             }
 

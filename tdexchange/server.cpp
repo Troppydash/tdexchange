@@ -189,12 +189,15 @@ auto network::server::start_exchange() -> void
     m_exchange_lock.unlock();*/
 
     std::default_random_engine rng;
+    int ms = 40;
     int tickid = 0;
+    int adminclock = 1000 / ms;
+    int admintick = 0;
 
     while (!m_exchange_flag)
     {
         // once a second
-        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        std::this_thread::sleep_for(std::chrono::milliseconds(ms));
 
         // tick
         logger::log(fmt::format("TICK {}", tickid));
@@ -310,32 +313,41 @@ auto network::server::start_exchange() -> void
 
 
         // create admin message
-        json admin = {
-            {"type", "admin-tick"},
-            {"id", tickid},
-            {"users", json::object()}
-        };
-        for (const auto &[id, user] : m_exchange.get_users())
+        if (admintick <= 0)
         {
-            json user_json = {
-                {"cash", user.get_cash()},
-                {"wealth", user.get_assets(valuations)},
-                {"holdings", generate_user_position(id)}
+            admintick = adminclock;
+            json admin = {
+                {"type", "admin-tick"},
+                {"id", tickid},
+                {"users", json::object()}
             };
-
-            admin["users"][user.get_alias()] = user_json;
-        }
-
-        // check for admin
-        for (const auto &id : ids)
-        {
-            int userid = m_user_map.at(id);
-
-            if (m_exchange.get_user(userid).get_admin())
+            for (const auto &[id, user] : m_exchange.get_users())
             {
-                send_json(admin, id);
+                json user_json = {
+                    {"cash", user.get_cash()},
+                    {"wealth", user.get_assets(valuations)},
+                    {"holdings", generate_user_position(id)}
+                };
+
+                admin["users"][user.get_alias()] = user_json;
+            }
+
+            // check for admin
+            for (const auto &id : ids)
+            {
+                int userid = m_user_map.at(id);
+
+                if (m_exchange.get_user(userid).get_admin())
+                {
+                    send_json(admin, id);
+                }
             }
         }
+        else
+        {
+            admintick -= 1;
+        }
+        
 
         m_connection_lock.unlock();
     }
