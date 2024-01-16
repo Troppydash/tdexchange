@@ -4,7 +4,7 @@
 #include "logger.h"
 
 #include <chrono>
-#include <format>
+#include <fmt/core.h>
 #include <functional>
 #include <ranges>
 #include <algorithm>
@@ -64,18 +64,18 @@ auto network::server::start() -> void
         // disable logging
         m_ws.set_access_channels(websocketpp::log::alevel::none);
 
-        logger::log(std::format("server started on port {}", m_port));
+        logger::log(fmt::format("server started on port {}", m_port));
         m_ws.listen(m_port);
         m_ws.start_accept();
         m_ws.run();
     }
     catch (const ws::exception &ex)
     {
-        logger::log(std::format("ws error {}", ex.what()), logger::mode::ERR);
+        logger::log(fmt::format("ws error {}", ex.what()), logger::mode::ERR);
     }
     /*catch (std::exception &ex)
     {
-        logger::log(std::format("other exception occurred, stopping, {}", ex.what()));
+        logger::log(fmt::format("other exception occurred, stopping, {}", ex.what()));
     }*/
 
     logger::log("stopping exchange...");
@@ -98,13 +98,13 @@ auto network::server::on_open(ws::connection_hdl hdl) -> void
         std::this_thread::sleep_for(std::chrono::seconds(2));
         if (!m_rconnections.contains(id))
         {
-            logger::log(std::format("user {} already disconnected prior to auth timeout", id));
+            logger::log(fmt::format("user {} already disconnected prior to auth timeout", id));
             return;
         }
 
         if (!m_user_map.contains(id))
         {
-            logger::log(std::format("stopping user {} due to lack of authentication", id));
+            logger::log(fmt::format("stopping user {} due to lack of authentication", id));
 
             // terminate the handle
             force_close_user(id);
@@ -119,7 +119,7 @@ auto network::server::on_close(ws::connection_hdl hdl) -> void
 
     if (m_user_map.contains(id))
     {
-        logger::log(std::format("user {} disconnected", id));
+        logger::log(fmt::format("user {} disconnected", id));
 
         // we only erase the reverse user exchange id if it corresponds with the connection id,
         // otherwise leave it unchanged towards the new connection id
@@ -131,7 +131,7 @@ auto network::server::on_close(ws::connection_hdl hdl) -> void
     }
     else
     {
-        logger::log(std::format("connection {} disconnected", id));
+        logger::log(fmt::format("connection {} disconnected", id));
     }
 
     m_connections.erase(hdl);
@@ -142,14 +142,14 @@ auto network::server::on_close(ws::connection_hdl hdl) -> void
 auto network::server::on_message(ws::connection_hdl hdl, websocket::message_ptr ptr) -> void
 {
     int id = rand() % 100;
-    logger::log(std::format("id {}, received message {} with code {}", id, ptr->get_payload(), static_cast<int>(ptr->get_opcode())));
+    logger::log(fmt::format("id {}, received message {} with code {}", id, ptr->get_payload(), static_cast<int>(ptr->get_opcode())));
 
     // check if user the authorized
     m_connection_lock.lock();
     if (!m_connections.contains(hdl))
     {
         m_connection_lock.unlock();
-        logger::log(std::format("id {}, no user for the message exists", id));
+        logger::log(fmt::format("id {}, no user for the message exists", id));
         return;
     }
 
@@ -160,7 +160,7 @@ auto network::server::on_message(ws::connection_hdl hdl, websocket::message_ptr 
         if (!payload)
         {
             m_connection_lock.unlock();
-            logger::log(std::format("id {}, unknown message payload", id));
+            logger::log(fmt::format("id {}, unknown message payload", id));
             return;
         }
 
@@ -171,7 +171,7 @@ auto network::server::on_message(ws::connection_hdl hdl, websocket::message_ptr 
     }
 
     m_connection_lock.unlock();
-    logger::log(std::format("id {}, unknown message code {}", id, static_cast<int>(ptr->get_opcode())), logger::mode::WARN);
+    logger::log(fmt::format("id {}, unknown message code {}", id, static_cast<int>(ptr->get_opcode())), logger::mode::WARN);
     return;
 }
 
@@ -195,7 +195,7 @@ auto network::server::start_exchange() -> void
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
 
         // tick
-        logger::log(std::format("TICK {}", tickid));
+        logger::log(fmt::format("TICK {}", tickid));
         tickid++;
 
         // process queue
@@ -398,7 +398,7 @@ auto network::server::parse_payload(const json &payload, int id, int user) -> vo
 {
     if (!payload.contains("type"))
     {
-        logger::log(std::format("{} message no type", id));
+        logger::log(fmt::format("{} message no type", id));
         return;
     }
 
@@ -412,7 +412,7 @@ auto network::server::parse_payload(const json &payload, int id, int user) -> vo
         };
         send_json(pl, user);
 
-        logger::log(std::format("id {}, unauthorized user", id));
+        logger::log(fmt::format("id {}, unauthorized user", id));
         return;
     }
 
@@ -430,7 +430,7 @@ auto network::server::parse_payload(const json &payload, int id, int user) -> vo
             };
             send_json(pl, user);
 
-            logger::log(std::format("id {}, misformed auth payload", id));
+            logger::log(fmt::format("id {}, misformed auth payload", id));
             return;
         }
 
@@ -456,7 +456,7 @@ auto network::server::parse_payload(const json &payload, int id, int user) -> vo
                 {"message", "auth success"}
             };
             send_json(pl, user);
-            logger::log(std::format("id {}, user {} authorized", id, static_cast<std::string>(payload["name"])));
+            logger::log(fmt::format("id {}, user {} authorized", id, static_cast<std::string>(payload["name"])));
         }
         else
         {
@@ -466,7 +466,7 @@ auto network::server::parse_payload(const json &payload, int id, int user) -> vo
                 {"message", "incorrect auth details"}
             };
             send_json(pl, user);
-            logger::log(std::format("id {}, unauthorized", id));
+            logger::log(fmt::format("id {}, unauthorized", id));
         }
     }
     else if (type == "order")
@@ -487,7 +487,7 @@ auto network::server::parse_payload(const json &payload, int id, int user) -> vo
             };
             send_json(pl, user);
 
-            logger::log(std::format("id {}, misformed order payload", id));
+            logger::log(fmt::format("id {}, misformed order payload", id));
             return;
         }
 
@@ -509,7 +509,7 @@ auto network::server::parse_payload(const json &payload, int id, int user) -> vo
         };
         send_json(pl, user);
 
-        logger::log(std::format("id {}, queued order on {} with {} @ {}", id, ticker, volume, price));
+        logger::log(fmt::format("id {}, queued order on {} with {} @ {}", id, ticker, volume, price));
     }
     else if (type == "delete")
     {
@@ -522,7 +522,7 @@ auto network::server::parse_payload(const json &payload, int id, int user) -> vo
             };
             send_json(pl, user);
 
-            logger::log(std::format("id {}, misformed delete payload", id));
+            logger::log(fmt::format("id {}, misformed delete payload", id));
             return;
         }
 
@@ -539,11 +539,11 @@ auto network::server::parse_payload(const json &payload, int id, int user) -> vo
         };
         send_json(pl, user);
 
-        logger::log(std::format("id {}, queued deletion on {}", id, ticker));
+        logger::log(fmt::format("id {}, queued deletion on {}", id, ticker));
     }
     else
     {
-        logger::log(std::format("id {}, unknown payload type {}", id, static_cast<std::string>(payload["type"])));
+        logger::log(fmt::format("id {}, unknown payload type {}", id, static_cast<std::string>(payload["type"])));
     }
 }
 
@@ -552,7 +552,7 @@ auto network::server::send_json(const json &message, int user) -> void
     // check if the user exists or not
     if (!m_rconnections.contains(user))
     {
-        logger::log(std::format("sending to user {} failed, no user found", user));
+        logger::log(fmt::format("sending to user {} failed, no user found", user));
         return;
     }
 
@@ -560,12 +560,12 @@ auto network::server::send_json(const json &message, int user) -> void
     // too bad and just fail here whatever
     try
     {
-        logger::log(std::format("sending to user {} of message {}", user, message.dump()));
+        logger::log(fmt::format("sending to user {} of message {}", user, message.dump()));
         m_ws.send(m_rconnections.at(user), message.dump(), ws_opcode::text);
     }
     catch (const std::exception &ex)
     {
-        logger::log(std::format("error in sending, reason: {}", ex.what()), logger::mode::ERR);
+        logger::log(fmt::format("error in sending, reason: {}", ex.what()), logger::mode::ERR);
     }
 }
 

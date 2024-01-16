@@ -1,14 +1,14 @@
 #include "exchange.h"
 #include "logger.h"
 
-#include <format>
+#include <fmt/core.h>
 #include <cassert>
 #include <string>
 #include <set>
 
 market::ticker::ticker()
 {
-    throw std::exception("not implemented");
+    throw std::runtime_error("not implemented");
 }
 
 market::ticker::ticker(string name, int id)
@@ -18,7 +18,7 @@ market::ticker::ticker(string name, int id)
 
 auto market::ticker::match(const order &aggressor, id_system &id) const->vector<transaction>
 {
-    logger::log(std::format("matching ticker {}", m_alias));
+    logger::log(fmt::format("matching ticker {}", m_alias));
 
     vector<transaction> transactions;
 
@@ -198,7 +198,7 @@ auto market::ticker::repr_orderbook() const -> string
     string repr;
 
     // header
-    repr += std::format("{:8}|{:8}|{:8}", "Bids", "Price", "Asks") + "\n";
+    repr += fmt::format("{:8}|{:8}|{:8}", "Bids", "Price", "Asks") + "\n";
     repr += "--------------------------\n";
 
     set<int> prices;
@@ -229,7 +229,7 @@ auto market::ticker::repr_orderbook() const -> string
         }
 
 
-        repr += std::format("{:8}|{:^8.1f}|{:<8}", bid_vol, price / 100.0, ask_vol) + "\n";
+        repr += fmt::format("{:8}|{:^8.1f}|{:<8}", bid_vol, price / 100.0, ask_vol) + "\n";
     }
 
     return repr;
@@ -264,7 +264,7 @@ auto market::ticker::get_orderbook() const -> orderbook
 
 market::user::user()
 {
-    throw std::exception("not implemented");
+    throw std::runtime_error("not implemented");
 }
 
 market::user::user(string name, int id, string passphase)
@@ -287,7 +287,7 @@ auto market::user::add_order(const order &ord) -> void
     assert(!m_orders.contains(ord.id));
     assert(m_id == ord.user_id);
 
-    logger::log(std::format("user {} added order {}", m_id, ord.id));
+    logger::log(fmt::format("user {} added order {}", m_id, ord.id));
 
     m_orders[ord.id] = ord;
 }
@@ -296,7 +296,7 @@ auto market::user::remove_order(const order &ord) -> void
 {
     assert(m_orders.contains(ord.id));
 
-    logger::log(std::format("user {} removed order {}", m_id, ord.id));
+    logger::log(fmt::format("user {} removed order {}", m_id, ord.id));
 
     m_orders.erase(ord.id);
 }
@@ -305,7 +305,7 @@ auto market::user::fill_order(const order &ord, int price, int volume, side type
 {
     assert(m_orders.contains(ord.id));
 
-    logger::log(std::format("user {} filled a {} order {} of {} @ {}",
+    logger::log(fmt::format("user {} filled a {} order {} of {} @ {}",
         m_id, side_repr[static_cast<int>(type)], ord.id, volume, price));
 
 
@@ -396,13 +396,13 @@ auto market::user::repr() const -> string
 {
     string repr;
 
-    repr += std::format("name {}, id {}, passphase {}\n", m_alias, m_id, m_passphase);
-    repr += std::format("cash {}\n", m_cash);
-    repr += std::format("holdings:\n");
+    repr += fmt::format("name {}, id {}, passphase {}\n", m_alias, m_id, m_passphase);
+    repr += fmt::format("cash {}\n", m_cash);
+    repr += fmt::format("holdings:\n");
 
     for (const auto &key : m_holdings)
     {
-        repr += std::format("    {}: {}\n", key.first, key.second);
+        repr += fmt::format("    {}: {}\n", key.first, key.second);
     }
     if (m_holdings.size() == 0)
     {
@@ -444,13 +444,13 @@ market::exchange::exchange()
     // create bots
     for (int i = 0; i < 20; ++i)
     {
-        m_users.insert({ i, { std::format("bot-{:02}", i), i } });
+        m_users.insert({ i, { fmt::format("bot-{:02}", i), i } });
     }
 
     // create trading accounts
     for (char c = 'a'; c <= 'p'; ++c)
     {
-        m_users.insert({ (int)c, { std::format("trading-{}", c), (int)c } });
+        m_users.insert({ (int)c, { fmt::format("trading-{}", c), (int)c } });
     }
 
     // create admin
@@ -461,11 +461,11 @@ auto market::exchange::user_order(side _side, int userid, int tickerid, int pric
 {
     if (ioc)
     {
-        logger::log(std::format("user {} ordered IOC on {} of {} @ {}", userid, tickerid, volume, price));
+        logger::log(fmt::format("user {} ordered IOC on {} of {} @ {}", userid, tickerid, volume, price));
     }
     else
     {
-        logger::log(std::format("user {} ordered LIM on {} of {} @ {}", userid, tickerid, volume, price));
+        logger::log(fmt::format("user {} ordered LIM on {} of {} @ {}", userid, tickerid, volume, price));
     }
 
 
@@ -501,7 +501,7 @@ auto market::exchange::user_cancel(int userid) -> void
 {
     assert(m_users.contains(userid));
 
-    logger::log(std::format("cancelling all orders for user {}", userid));
+    logger::log(fmt::format("cancelling all orders for user {}", userid));
 
     auto &user = m_users[userid];
     vector<int> ords = user.get_orders();
@@ -512,7 +512,7 @@ auto market::exchange::user_cancel(int userid) -> void
         m_tickers[o.ticker_id].cancel_order(o);
         user.remove_order(o);
 
-        logger::log(std::format("cancelled order {}", o.id));
+        logger::log(fmt::format("cancelled order {}", o.id));
     }
 
 
@@ -523,7 +523,7 @@ auto market::exchange::user_cancel_ticker(int userid, int tickerid) -> void
     assert(m_users.contains(userid));
     assert(m_tickers.contains(tickerid));
 
-    logger::log(std::format("cancelling all orders on {} for user {}", tickerid, userid));
+    logger::log(fmt::format("cancelling all orders on {} for user {}", tickerid, userid));
 
     auto &user = m_users[userid];
     vector<int> ords = user.get_orders();
@@ -538,7 +538,7 @@ auto market::exchange::user_cancel_ticker(int userid, int tickerid) -> void
         m_tickers[o.ticker_id].cancel_order(o);
         user.remove_order(o);
 
-        logger::log(std::format("cancelled order {}", o.id));
+        logger::log(fmt::format("cancelled order {}", o.id));
     }
 }
 
@@ -562,7 +562,7 @@ auto market::exchange::repr_tickers() const -> string
 
     for (const auto &ticker : m_tickers)
     {
-        repr += std::format("name {}, id {}", ticker.second.get_alias(), ticker.first) + "\n";
+        repr += fmt::format("name {}, id {}", ticker.second.get_alias(), ticker.first) + "\n";
         repr += ticker.second.repr_orderbook();
         repr += "\n";
     }
@@ -584,7 +584,7 @@ auto market::exchange::repr_users() const -> string
     for (const auto &user : m_users)
     {
         repr += user.second.repr();
-        repr += std::format("user assets {}\n", user.second.get_assets(valuations));
+        repr += fmt::format("user assets {}\n", user.second.get_assets(valuations));
         repr += "\n";
     }
 
@@ -639,7 +639,7 @@ auto market::exchange::get_ticker(const std::string &name) const -> const ticker
         }
     }
 
-    throw std::runtime_error(std::format("cannot find ticker {} in exchange", name));
+    throw std::runtime_error(fmt::format("cannot find ticker {} in exchange", name));
 }
 
 auto market::exchange::has_ticker(const std::string &name) const -> bool
@@ -690,7 +690,7 @@ auto market::exchange::process_order(const order &aggressor) -> void
 
     for (transaction &trans : transactions)
     {
-        logger::log(std::format("    {}", trans.repr()));
+        logger::log(fmt::format("    {}", trans.repr()));
         m_transactions.push_back(trans);
     }
 
@@ -908,7 +908,7 @@ auto market::id_system::get(const string &type) -> int
 
 auto market::transaction::repr() const -> string
 {
-    return std::format(
+    return fmt::format(
         "Transaction {}, {} aggressor between {} and {} on {} of {} @ {}, orders {} and {}",
         id,
         market::side_repr[static_cast<int>(aggressor)],
@@ -921,7 +921,7 @@ auto market::transaction::repr() const -> string
 
 auto market::order::repr() const -> string
 {
-    return std::format(
+    return fmt::format(
         "Order {}, type {} by {} on {} of {} @ {}",
         id,
         market::side_repr[static_cast<int>(wish)],
