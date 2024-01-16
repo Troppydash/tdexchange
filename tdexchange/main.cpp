@@ -15,6 +15,7 @@
 auto main() -> int
 {
     // start file server
+    // TODO: fix this on servers not working?
     std::thread file([]()
     {
         network::file_server s{ 8081 };

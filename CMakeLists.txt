@@ -8,7 +8,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED YES)
 set(CMAKE_CXX_FLAGS "-static-libstdc++")
 
 # link header only libraries
-# https://github.com/zaphoyd/websocketpp.git, branch develop
+# https://github.com/jcelerier/websocketpp, branch develop
 include_directories("~/tools/websocketpp")
 # https://github.com/nlohmann/json.git
 include_directories("~/tools/nlohmann_json/include")
@@ -27,7 +27,8 @@ include_directories(${Boost_INCLUDE_DIRS})
 
 # https://github.com/fmtlib/fmt
 # https://fmt.dev/latest/usage.html, build and install
-find_package(fmt)
+find_package(fmt REQUIRED)
+include_directories("~/tools/fmt/include")  # we shouldn't need this?
 
 # copy the public folder
 file(COPY ${PROJECT_SOURCE_DIR}/tdexchange/public DESTINATION ${PROJECT_SOURCE_DIR}/build)

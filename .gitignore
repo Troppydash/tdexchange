@@ -366,3 +366,4 @@ FodyWeavers.xsd
 build/
 dist/
 dist.tar.xz
+*.service
