@@ -364,3 +364,5 @@ FodyWeavers.xsd
 
 # custom
 build/
+dist/
+dist.tar.xz
