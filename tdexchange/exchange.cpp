@@ -445,11 +445,10 @@ market::exchange::exchange()
     for (int i = 0; i < 20; ++i)
     {
         m_users.insert({ i, { std::format("bot-{:02}", i), i } });
-        //m_users[i] = { std::format("bot-{:02}", i), i };
     }
 
     // create trading accounts
-    for (char c = 'a'; c <= 'z'; ++c)
+    for (char c = 'a'; c <= 'p'; ++c)
     {
         m_users.insert({ (int)c, { std::format("trading-{}", c), (int)c } });
     }
