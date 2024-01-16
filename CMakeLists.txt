@@ -14,6 +14,8 @@ include_directories("~/tools/websocketpp")
 include_directories("~/tools/nlohmann_json/include")
 # https://github.com/bshoshany/thread-pool
 include_directories("~/tools/thread-pool/include")
+# https://github.com/yhirose/cpp-httplib
+include_directories("~/tools/cpp-httplib")
 
 # link boost
 # sudo apt install libboost-all-dev
@@ -26,6 +28,9 @@ include_directories(${Boost_INCLUDE_DIRS})
 # https://github.com/fmtlib/fmt
 # https://fmt.dev/latest/usage.html, build and install
 find_package(fmt)
+
+# copy the public folder
+file(COPY ${PROJECT_SOURCE_DIR}/tdexchange/public DESTINATION ${PROJECT_SOURCE_DIR}/build)
 
 # add the *.cpp files
 file(GLOB CPP_SOURCES "tdexchange/*.cpp")
