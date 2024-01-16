@@ -169,6 +169,22 @@ protected:
     BS::thread_pool m_pool;
 };
 
+class file_server
+{
+
+public:
+    file_server(
+        unsigned short port = 8081,
+        const std::string &path = "public"
+    );
+
+    auto start() -> void;
+
+protected:
+    unsigned short m_port;
+    std::string m_path;
+
+};
 
 
 }

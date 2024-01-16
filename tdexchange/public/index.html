@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>TDEX Admin Web Interface</title>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/stimetable.css@latest/stimetable.min.css">
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: monospace;
+        }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            max-height: 100vh;
+            overflow: auto;
+        }
+
+        .grid-main {
+            height: 100vh;
+            width: 100vw;
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            grid-template-rows: repeat(6, 1fr);
+            grid-column-gap: 0;
+            grid-row-gap: 0;
+        }
+
+        .div1 {
+            grid-area: 1 / 1 / 5 / 4;
+        }
+
+        .div2 {
+            grid-area: 1 / 4 / 5 / 6;
+        }
+
+        .div3 {
+            grid-area: 5 / 1 / 7 / 4;
+        }
+
+        .div4 {
+            grid-area: 5 / 4 / 7 / 6;
+        }
+
+        .div1, .div2, .div3, .div4 {
+            background: var(--st-background);
+            border: 2px solid var(--st-secondary);
+            padding: 1rem;
+        }
+
+        .users-cell {
+            height: 30vh;
+            overflow: auto;
+        }
+
+        .transactions-cell {
+            height: 25vh;
+            overflow: auto;
+        }
+
+        .stock-orderbook {
+            height: 21vh;
+            overflow: auto;
+        }
+
+            .stock-orderbook table td, .stock-orderbook table th {
+                padding: 0 !important;
+                font-size: 0.9rem !important;
+            }
+
+            .stock-orderbook table {
+                width: 50%;
+            }
+    </style>
+</head>
+<body class="st-dark">
+
+    <div class="grid-main">
+        <div class="div1">
+            <canvas id="price-chart"></canvas>
+        </div>
+        <div class="div2">
+            <div>
+                <div class="users-cell">
+                    <table class="st-table st-table--small st-table--full st-table--primary" style="table-layout: fixed;">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>PnL</th>
+                                <th>Holdings</th>
+                            </tr>
+                        </thead>
+                        <tbody id="users-table">
+                        </tbody>
+                    </table>
+                </div>
+                <div>
+                    <canvas id="pnl-chart"></canvas>
+                </div>
+            </div>
+
+        </div>
+        <div class="div3">
+            <div class="transactions-cell">
+                <table class="st-table st-table--small st-table--full st-table--primary">
+                    <thead>
+                        <tr>
+                            <th>Id</th>
+                            <th>Ticker</th>
+                            <th>Buyer</th>
+                            <th>Seller</th>
+                            <th>Price</th>
+                            <th>Volume</th>
+                        </tr>
+                    </thead>
+                    <tbody id="transaction-table">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="div4">
+            <div class="stock-selector" id="stock-breadcrumb"></div>
+            <br />
+            <div class="stock-orderbook" id="stock-orderbooks"></div>
+        </div>
+    </div>
+
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!--<script src="https://code.jquery.com/jquery-3.7.1.min.js"-->
+    <!--        integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo="-->
+    <!--        crossorigin="anonymous"></script>-->
+    <script>
+    Chart.defaults.backgroundColor = '#9BD0F5';
+    Chart.defaults.borderColor = '#464646';
+    Chart.defaults.color = '#fff';
+
+    class WebChart {
+        constructor(limit, timeout, config) {
+            this.limit = limit;
+            this.timeout = timeout;
+            this.values = 0;
+            this.config = config;
+            this.is_new = true;
+
+            this.chart = null;
+            this.id = null;
+
+            this.iter = 0;
+        }
+
+        start(ele) {
+            this.chart = new Chart(ele, {
+                data: {
+                    labels: [],
+                    datasets: []
+                },
+                ...this.config
+            });
+
+            this.id = setInterval(() => {
+                this.restart(ele);
+            }, this.timeout * 1000);
+        }
+
+        restart(ele) {
+            // restart the chart
+            const data = this.chart.data;
+            this.chart.destroy();
+
+            this.chart = new Chart(ele, {
+                data: data,
+                ...this.config
+            });
+        }
+
+        push_iter(data) {
+            this.push(this.iter, data);
+            this.iter += 1;
+        }
+
+        push(label, data) {
+            if (this.chart === null) {
+                console.warn("tried to push into an uninitialized chart")
+                return;
+            }
+
+            this.values += 1;
+            this.chart.data.labels.push(label);
+
+            if (this.is_new) {
+                // new graph creation with tickers
+                const datasets = Object.keys(data).map((name) => {
+                    return {
+                        label: name,
+                        data: [data[name]],
+                        pointRadius: 2,
+                        borderWidth: 1,
+                    }
+                });
+                for (const dataset of datasets) {
+                    this.chart.data.datasets.push(dataset);
+                }
+                this.chart.update();
+                this.is_new = false;
+                return;
+            }
+
+
+            // retain only the limit number of points
+            if (this.values > this.limit) {
+                this.chart.data.labels.shift();
+            }
+
+            this.chart.data.datasets.forEach((dataset) => {
+                dataset.data.push(data[dataset.label]);
+                if (this.values > this.limit) {
+                    dataset.data.shift();
+                }
+            });
+
+            this.chart.update();
+        }
+
+        stop() {
+            if (this.id !== null) {
+                clearInterval(this.id);
+            }
+
+            if (this.chart !== null) {
+                this.chart.destroy();
+                this.chart = null;
+            }
+
+        }
+    }
+
+    class AdminClient {
+        constructor(name, password, uri = 'ws://localhost:8080') {
+            this.name = name;
+            this.password = password;
+            this.uri = uri;
+            this.ws = null;
+
+            // limit til the next chart refresh
+            this.limit = 0;
+
+            // ticks on the x-axis
+            this.tick = 0;
+
+            this.transactions = [];
+            this.config = {
+                update: 50,  // how frequency the chart is updated
+                last: 50,  // how many ticks are retained on the graph
+                last_transactions: 10,  // how many transactions are retained on the table
+                book_update: 200,  // how frequent the order book is updated
+                all_update: 50,  // how frequent the users are updated
+                pnl_update: 20,
+                chart_restart: 5,
+            }
+
+            this.orderbook_index = -1;
+            this.orderbooks = [];
+            this.tables = [];
+            this.order_limit = 0;
+            this.btns = [];
+
+            this.update = 0;
+
+            this.pnl_chart_tick = 0;
+            this.pnl_chart = null;
+            this.pnl_chart_settings = {
+                options: {
+                    animation: false,
+                    scales: {
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'PNL ($)'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Tick'
+                            },
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false,
+                        }
+                    }
+                },
+                type: 'line'
+            };
+            this.chart = null;
+            this.chart_settings = {
+                options: {
+                    animation: false,
+                    scales: {
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Share Price ($)'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Tick'
+                            },
+                        }
+                    },
+                    plugins: {},
+                },
+                type: 'line'
+            };
+        }
+
+        start() {
+            this.chart = new WebChart(this.config.last, this.config.chart_restart, this.chart_settings);
+            this.chart.start(document.getElementById('price-chart'));
+
+            this.pnl_chart = new WebChart(1000, this.config.chart_restart, this.pnl_chart_settings);
+            this.pnl_chart.start(document.getElementById('pnl-chart'));
+
+            this.ws = new WebSocket(this.uri);
+            this.ws.onopen = this.on_open.bind(this);
+            this.ws.onclose = this.on_close.bind(this);
+            this.ws.onmessage = this.on_message.bind(this);
+        }
+
+        on_open(event) {
+            this.ws.send(JSON.stringify({
+                type: 'auth',
+                name: this.name,
+                passphase: this.password
+            }));
+        }
+
+        on_close(event) {
+            this.ws = null;
+            console.log('websocket closed');
+        }
+
+        on_message(event) {
+            const data = JSON.parse(event.data);
+            switch (data.type) {
+                case "auth": {
+                    if (!data.ok) {
+                        console.log("failure:", data.message);
+                    } else {
+                        console.log("successfully authorized");
+                    }
+                    break;
+                }
+                case 'tick': {
+                    this.handle_tick(data);
+                    break;
+                }
+                case 'admin-tick': {
+                    this.handle_admin_tick(data);
+                    break;
+                }
+            }
+        }
+
+        handle_breadcrumb(index) {
+            if (this.orderbook_index >= 0) {
+                this.tables[this.orderbook_index].style.display = 'none';
+                this.btns[this.orderbook_index].classList.remove('st-button--fill');
+            }
+
+
+            this.tables[index].style.display = '';
+            this.btns[index].classList.add('st-button--fill');
+
+            this.orderbook_index = index;
+        }
+
+        handle_tick(data) {
+            // create transaction elements
+            for (const details of data.transactions) {
+                const row = document.createElement('tr');
+
+                const id = document.createElement('td');
+                id.innerText = details.id;
+                const buyer = document.createElement('td');
+                buyer.innerText = details.bidder;
+                const seller = document.createElement('td');
+                seller.innerText = details.asker;
+                const ticker = document.createElement('td');
+                ticker.innerText = details.ticker;
+                const price = document.createElement('td');
+                price.innerText = (details.price / 100).toFixed(2);
+                const volume = document.createElement('td');
+                volume.innerText = details.volume;
+
+                row.append(id, ticker, buyer, seller, price, volume);
+
+                this.transactions.push(row);
+            }
+
+            while (this.transactions.length >= this.config.last_transactions) {
+                this.transactions.shift();
+            }
+
+            document.getElementById('transaction-table').replaceChildren();
+            for (let i = this.transactions.length - 1; i >= 0; --i) {
+                document.getElementById('transaction-table').append(this.transactions[i]);
+            }
+
+            // update tickers
+            if (this.limit > 0) {
+                this.limit -= 1;
+            } else {
+                this.limit = this.config.update;
+
+                const new_data = {};
+                for (const [key, value] of Object.entries(data.orderbook)) {
+                    new_data[key] = value.last_price / 100;
+
+                    let mid = 0;
+                    if (value.bids.length > 0 && value.asks.length > 0) {
+                        mid = (value.bids[0].price + value.asks[0].price) / 2 / 100;
+                    }
+
+                    new_data[key + '_mid'] = mid;
+                }
+                this.chart.push(this.tick, new_data);
+                this.tick += 1;
+
+            }
+
+            // update orderbook
+            if (this.order_limit > 0) {
+                this.order_limit -= 1;
+            } else {
+                this.order_limit = this.config.book_update;
+
+                const orderbook = Object.keys(data.orderbook);
+                if (JSON.stringify(orderbook) !== JSON.stringify(this.orderbooks)) {
+                    this.orderbooks = orderbook;
+
+                    // update breadcrumb
+                    const entries = [];
+                    let i = 0;
+                    for (const name of this.orderbooks) {
+                        const btn = document.createElement('button');
+                        btn.className = 'st-button st-button--primary';
+                        btn.textContent = name;
+                        let t = i;
+                        btn.onclick = () => this.handle_breadcrumb(t);
+
+                        entries.push(btn);
+                        i += 1;
+                    }
+
+                    document.getElementById('stock-breadcrumb').replaceChildren(...entries);
+
+                    this.btns = entries;
+                }
+
+                // create orderbook
+                const tables = [];
+                let i = 0;
+                for (const name of this.orderbooks) {
+                    // template table
+                    const table = document.createElement('table');
+                    table.className = 'st-table st-table--small st-table--separator';
+
+                    if (i !== this.orderbook_index) {
+                        table.style.display = 'none';
+                    }
+
+                    const thead = document.createElement('thead');
+                    const theadr = document.createElement('tr');
+                    const bid = document.createElement('th');
+                    const price = document.createElement('th');
+                    const ask = document.createElement('th');
+                    bid.textContent = 'Bid';
+                    price.textContent = 'Price';
+                    ask.textContent = 'Ask';
+                    theadr.append(bid, price, ask);
+                    thead.append(theadr);
+
+                    const tbody = document.createElement('tbody');
+
+                    const book = {};
+                    for (const details of data.orderbook[name].bids) {
+                        book[details.price] = {
+                            bid: details.volume,
+                            ask: 0
+                        };
+                    }
+                    for (const details of data.orderbook[name].asks) {
+                        if (Object.hasOwn(book, details.price)) {
+                            book[details.price].ask = details.volume;
+                        } else {
+                            book[details.price] = {
+                                bid: 0,
+                                ask: details.volume
+                            };
+                        }
+                    }
+
+                    const keys = Object.keys(book).sort((a, b) => b - a);
+                    for (const key of keys) {
+                        const tr = document.createElement('tr');
+                        const b = document.createElement('td');
+                        const p = document.createElement('td');
+                        const a = document.createElement('td');
+
+                        b.textContent = book[key].bid !== 0 ? book[key].bid : '';
+                        p.textContent = (key / 100).toFixed(2);
+                        a.textContent = book[key].ask !== 0 ? book[key].ask : '';
+
+                        tr.append(b, p, a);
+                        tbody.append(tr);
+                    }
+
+                    table.append(thead, tbody);
+                    tables.push(table);
+
+                    i += 1;
+                }
+
+                document.getElementById('stock-orderbooks').replaceChildren(...tables);
+
+                this.tables = tables;
+
+                // set initial index
+                if (this.orderbook_index < 0) {
+                    // flip index
+                    this.handle_breadcrumb(0);
+                }
+            }
+
+        }
+
+        handle_admin_tick(data) {
+            if (this.update > 0) {
+                this.update -= 1;
+                return;
+            }
+
+            this.update = this.config.all_update;
+
+            // create user elements
+            let user_data = {};
+            let rows = [];
+            for (const [username, details] of Object.entries(data.users)) {
+                if (username.startsWith('bot-')) {
+                    continue;
+                }
+
+                user_data[username] = details.wealth / 100;
+
+                const row = document.createElement('tr');
+
+                const name = document.createElement('td');
+                const pnl = document.createElement('td');
+                name.innerText = username;
+                pnl.innerText = (details.wealth / 100).toFixed(2);
+
+                const holdings = document.createElement('td');
+                holdings.innerText = Object.entries(details.holdings).map(([ticker, pos]) => `${ticker}: ${pos}`).join(', ');
+
+                row.append(name, pnl, holdings);
+
+                rows.push(row);
+            }
+
+            document.getElementById('users-table').replaceChildren(...rows);
+
+            if (this.pnl_chart_tick > 0) {
+                this.pnl_chart_tick -= 1;
+            } else {
+                this.pnl_chart_tick = this.config.pnl_update;
+                this.pnl_chart.push_iter(user_data);
+            }
+        }
+    }
+
+    window.onload = () => {
+        const client = new AdminClient('terry', 'terry');
+        client.start();
+    };
+    </script>
+</body>
+</html>

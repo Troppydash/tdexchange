@@ -3,8 +3,10 @@
 #include "server.h"
 #include "logger.h"
 
-#include <chrono>
 #include <fmt/core.h>
+#include <httplib.h>
+
+#include <chrono>
 #include <functional>
 #include <ranges>
 #include <algorithm>
@@ -602,3 +604,21 @@ auto network::server::is_user_auth(int user) const -> bool
 }
 
 
+
+network::file_server::file_server(unsigned short port, const std::string &path)
+    : m_port(port), m_path(path)
+{
+}
+
+auto network::file_server::start() -> void
+{
+    httplib::Server server;
+    
+    auto ret = server.set_mount_point("/", m_path);
+    if (!ret)
+    {
+        throw std::runtime_error("no public directory found when serving static content");
+    }
+
+    server.listen("localhost", m_port);
+}

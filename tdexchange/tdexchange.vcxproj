@@ -71,10 +71,12 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>C:\Users\forti\Tools\boost\boost_1_82_0;C:\Users\forti\Tools\cjson\json-3.11.2\include;C:\Users\forti\Tools\http\cpp-httplib-0.14.3;C:\Users\forti\Tools\http\websocketpp-0.8.2\websocketpp;C:\Users\forti\Tools\http\thread-pool-4.0.1\include;$(IncludePath)</IncludePath>
+    <IncludePath>C:\Users\forti\Tools\fmt-10.2.0\include;C:\Users\forti\Tools\boost\boost_1_82_0;C:\Users\forti\Tools\cjson\json-3.11.2\include;C:\Users\forti\Tools\http\cpp-httplib-0.14.3;C:\Users\forti\Tools\http\websocketpp-0.8.2\websocketpp;C:\Users\forti\Tools\http\thread-pool-4.0.1\include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Users\forti\Tools\fmt-10.2.0\builds\Release;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>C:\Users\forti\Tools\boost\boost_1_82_0;C:\Users\forti\Tools\cjson\json-3.11.2\include;C:\Users\forti\Tools\http\cpp-httplib-0.14.3;C:\Users\forti\Tools\http\websocketpp-0.8.2\websocketpp;C:\Users\forti\Tools\http\thread-pool-4.0.1\include;$(IncludePath)</IncludePath>
+    <IncludePath>C:\Users\forti\Tools\fmt-10.2.0\include;C:\Users\forti\Tools\boost\boost_1_82_0;C:\Users\forti\Tools\cjson\json-3.11.2\include;C:\Users\forti\Tools\http\cpp-httplib-0.14.3;C:\Users\forti\Tools\http\websocketpp-0.8.2\websocketpp;C:\Users\forti\Tools\http\thread-pool-4.0.1\include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Users\forti\Tools\fmt-10.2.0\builds\Release;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Label="Vcpkg">
     <VcpkgEnableManifest>false</VcpkgEnableManifest>
@@ -119,7 +121,15 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>fmt.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <CustomBuildStep>
+      <Command>
+      </Command>
+    </CustomBuildStep>
+    <PostBuildEvent>
+      <Command>xcopy /S /Y "$(SolutionDir)$(SolutionName)\public\" "$(TargetDir)public\"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -137,7 +147,15 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>fmt.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <CustomBuildStep>
+      <Command>
+      </Command>
+    </CustomBuildStep>
+    <PostBuildEvent>
+      <Command>xcopy /S /Y "$(SolutionDir)$(SolutionName)\public\" "$(TargetDir)public\"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="exchange.cpp" />
@@ -164,6 +182,7 @@
     <Text Include="interface.txt" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="index.html" />
     <None Include="README.md" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
