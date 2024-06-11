@@ -632,5 +632,6 @@ auto network::file_server::start() -> void
         throw std::runtime_error("no public directory found when serving static content");
     }
 
-    server.listen("localhost", m_port);
+    std::cout << "listening\n";
+    server.listen("127.0.0.1", m_port);
 }

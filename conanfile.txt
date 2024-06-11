@@ -1,0 +1,11 @@
+[requires]
+websocketpp/0.8.2
+nlohmann_json/3.11.3
+bshoshany-thread-pool/4.1.0
+cpp-httplib/0.15.3
+boost/1.83.0
+fmt/10.2.1
+
+[generators]
+CMakeDeps
+CMakeToolchain

@@ -367,3 +367,4 @@ build/
 dist/
 dist.tar.xz
 *.service
+CMakeUserPresets.json

@@ -16,12 +16,12 @@ auto main() -> int
 {
     // start file server
     // TODO: fix this on servers not working?
-    std::thread file([]()
-    {
-        network::file_server s{ 8081 };
-        std::cout << "starting file server on port 8081" << std::endl;
-        s.start();
-    });
+    // std::thread file([]()
+    // {
+    //     network::file_server s{ 8081 };
+    //     std::cout << "starting file server on port 8081" << std::endl;
+    //     s.start();
+    // });
 
 
     network::server server{ 8080 };
