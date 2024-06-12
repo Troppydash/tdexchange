@@ -111,6 +111,8 @@ to delete all orders from a ticker, send
 	"ticker": <ticker_name>	
 }
 
+// TODO: Update this
+
 
 
 

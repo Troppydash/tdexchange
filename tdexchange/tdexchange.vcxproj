@@ -163,6 +163,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Use</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Use</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="order.cpp" />
     <ClCompile Include="server.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Use</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Use</PrecompiledHeader>
@@ -171,12 +172,21 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="ticker.cpp" />
+    <ClCompile Include="transaction.cpp" />
+    <ClCompile Include="user.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="exchange.h" />
+    <ClInclude Include="id.h" />
     <ClInclude Include="logger.h" />
+    <ClInclude Include="order.h" />
     <ClInclude Include="server.h" />
+    <ClInclude Include="side.h" />
     <ClInclude Include="stdafx.h" />
+    <ClInclude Include="ticker.h" />
+    <ClInclude Include="transaction.h" />
+    <ClInclude Include="user.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="interface.txt" />

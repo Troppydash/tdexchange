@@ -2,6 +2,7 @@
 
 #include "server.h"
 #include "logger.h"
+#include "id.h"
 
 #include <fmt/core.h>
 #include <httplib.h>
@@ -219,7 +220,7 @@ auto network::server::start_exchange() -> void
                     goto next;
                 }
 
-                int tickerid = m_exchange.get_ticker(ticker).get_id();
+                ids::ticker_id tickerid = m_exchange.get_ticker(ticker).get_id();
                 m_exchange.user_order(
                     bid ? market::side::BID : market::side::ASK,
                     user,
@@ -238,7 +239,7 @@ auto network::server::start_exchange() -> void
                     goto next;
                 }
 
-                int tickerid = m_exchange.get_ticker(ticker).get_id();
+                ids::ticker_id tickerid = m_exchange.get_ticker(ticker).get_id();
                 m_exchange.user_cancel_ticker(user, tickerid);
             }
             else
@@ -254,7 +255,7 @@ auto network::server::start_exchange() -> void
 
         m_connection_lock.lock();
         // preparing data to send tick updates
-        const std::map<int, int> &valuations = m_exchange.get_valuations();
+        const std::map<ids::ticker_id, int> &valuations = m_exchange.get_valuations();
         json orderbook = generate_orderbook();
 
         // compute transactions
@@ -276,7 +277,7 @@ auto network::server::start_exchange() -> void
             };
             ts.push_back(trans_json);
         }
-        m_exchange_next_transaction += ts.size();
+        m_exchange_next_transaction += (int)ts.size();
 
 
         // randomize the user order that the ticks are sent to
@@ -291,7 +292,7 @@ auto network::server::start_exchange() -> void
 
             // get user holdings
             const market::user &user = m_exchange.get_user(userid);
-            const std::map<int, int> &holdings = user.get_holdings();
+            const std::map<ids::ticker_id, int> &holdings = user.get_holdings();
 
             json position = generate_user_position(userid);
 
@@ -395,7 +396,7 @@ auto network::server::generate_user_position(int userid) const -> json
     json holdings_json = json::object();
 
     const auto &user = m_exchange.get_user(userid);
-    const std::map<int, int> &holdings = user.get_holdings();
+    const std::map<ids::ticker_id, int> &holdings = user.get_holdings();
     for (const auto &[id, ticker] : m_exchange.get_tickers())
     {
         int amount = 0;
