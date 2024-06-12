@@ -256,6 +256,13 @@ auto market::exchange::get_transactions() const -> const vector<transaction> &
     return m_transactions;
 }
 
+auto market::exchange::consume_transactions() -> vector<transaction>
+{
+    auto trans = m_transactions;
+    m_transactions.clear();
+    return trans;
+}
+
 auto market::exchange::process_order(const order &aggressor) -> void
 {
     assert(m_tickers.contains(aggressor.ticker_id));

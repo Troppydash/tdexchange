@@ -260,8 +260,8 @@ auto network::server::start_exchange() -> void
 
         // compute transactions
         json ts = json::array();
-        const auto &transactions = m_exchange.get_transactions();
-        for (auto it = transactions.begin() + m_exchange_next_transaction; it < transactions.end(); ++it)
+        const auto &transactions = m_exchange.consume_transactions();
+        for (auto it = transactions.begin(); it < transactions.end(); ++it)
         {
             const market::transaction &trans = *it;
             json trans_json = {
@@ -277,7 +277,7 @@ auto network::server::start_exchange() -> void
             };
             ts.push_back(trans_json);
         }
-        m_exchange_next_transaction += (int)ts.size();
+        //m_exchange_next_transaction += (int)ts.size();
 
 
         // randomize the user order that the ticks are sent to

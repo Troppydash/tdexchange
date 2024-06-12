@@ -81,7 +81,9 @@ public:
     auto get_ticker(const std::string &name) const -> const ticker &;
     auto has_ticker(const std::string &name) const -> bool;
     auto get_valuations() const->map<ids::ticker_id, int>;
+
     auto get_transactions() const->const vector<transaction> &;
+    auto consume_transactions() -> vector<transaction>;
 protected:
     // attempt to match any order given the new aggressor order
     auto process_order(const order &aggressor) -> void;
